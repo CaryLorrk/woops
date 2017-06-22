@@ -1,0 +1,29 @@
+HELLOWORLD_ROOT := $(shell pwd)
+WOOPS_ROOT := $(HELLOWORLD_ROOT)/../..
+
+include $(WOOPS_ROOT)/def.mk
+
+CXX = $(WOOPS_CXX)
+CXXFLAGS = $(WOOPS_CXXFLAGS)
+INCFLAGS = $(WOOPS_INCFLAGS) -I$(WOOPS_SRC)
+LDFLAGS = $(WOOPS_LDFLAGS)
+
+
+HELLOWORLD_SRC = $(shell find $(HELLOWORLD_ROOT)/src/*.cc)
+HELLOWORLD_OBJ = $(HELLOWORLD_SRC:.cc=.o)
+HELLOWORLD_BIN = $(HELLOWORLD_ROOT)/bin
+HELLOWORLD_MAIN = $(HELLOWORLD_BIN)/helloworld_main
+
+all: $(HELLOWORLD_MAIN)
+
+$(HELLOWORLD_MAIN): $(HELLOWORLD_OBJ) $(WOOPS_ROOT)/lib/libwoops.a
+	mkdir -p $(HELLOWORLD_BIN)
+	$(CXX) $(CXXFLAGS) $(INCFLAGS) $^ -o $@  $(LDFLAGS)
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $(INCFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(HELLOWORLD_OBJ) $(HELLOWORLD_BIN)
+
+.PHONY: clean

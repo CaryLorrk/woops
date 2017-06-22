@@ -1,0 +1,40 @@
+IMAGE=carylorrk/woops
+CONTAINER=woops
+
+all: build
+
+attach:
+	nvidia-docker exec -it $(CONTAINER) bash
+
+bin-attach:
+	nvidia-docker exec -it $(CONTAINER)-bin bash
+
+rmf:
+	docker rm -f $(CONTAINER)
+
+bin-rmf:
+	docker rm -f $(CONTAINER)-bin
+
+stop:
+	docker stop $(CONTAINER)
+
+start:
+	nvidia-docker start $(CONTAINER)
+
+run:
+	mkdir -p cache
+	nvidia-docker run -d -P --name $(CONTAINER) -v `pwd`:/root/woops -v `pwd`/cache:/root/.cache $(IMAGE)
+
+bin-run:
+	nvidia-docker run -d -P --name $(CONTAINER)-bin  $(IMAGE)-bin
+
+build:
+	docker build -t $(IMAGE) .
+
+bin-build:
+	docker build -f Dockerfile.bin -t $(IMAGE)-bin .
+
+bin-push:
+	docker push $(IMAGE)-bin
+
+.PHONY: build run rmf attach

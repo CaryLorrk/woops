@@ -1,0 +1,8 @@
+syntax='proto3';
+package woops;
+message WoopsConfigProto {
+    int32 staleness = 1;
+    string this_host = 2;
+    string port = 3;
+    repeated string hosts = 4;
+}

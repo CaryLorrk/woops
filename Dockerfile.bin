@@ -1,0 +1,26 @@
+FROM carylorrk/woops
+
+MAINTAINER CaryLorrk <carylorrk@google.com>
+
+RUN apt-get install -y --no-install-recommends \
+        openssh-server
+
+COPY ssh .ssh
+
+RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config
+
+
+RUN  apt-get install -y gdb python2.7-dbg
+
+RUN pip install backports.weakref==1.0rc1 bleach==1.5.0 funcsigs==1.0.2 html5lib==0.9999999 markdown==2.2.0 mock==2.0.0 pbr==3.1.1 protobuf==3.3.0 werkzeug==0.12.2
+
+
+WORKDIR /root
+ENTRYPOINT ["sleep", "infinity"]
+
+COPY apps/tensorflow/test /root/test
+
+# Install TensorFlow GPU version.
+COPY apps/tensorflow/tensorflow/tensorflow-*.whl /root
+RUN pip install /root/tensorflow-*.whl
+RUN rm -f /root/tensorflow-*.whl

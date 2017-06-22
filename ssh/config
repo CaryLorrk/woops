@@ -1,0 +1,3 @@
+Host *
+    # Disable host key verification
+    StrictHostKeyChecking no

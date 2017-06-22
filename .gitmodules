@@ -1,0 +1,3 @@
+[submodule "apps/tensorflow/tensorflow"]
+	path = apps/tensorflow/tensorflow
+	url = https://github.com/CaryLorrk/tensorflow.git

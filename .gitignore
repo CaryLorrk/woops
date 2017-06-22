@@ -1,0 +1,48 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# header dependency
+*.d
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# bazel cache
+cache/
+
+# grpc
+*.pb.*
+
+# python compiled file
+*.pyc
+
+# YCM
+.ycm_extra_conf.py
+
+apps/helloworld/bin/
+apps/tensorflow/test/dataset/
+

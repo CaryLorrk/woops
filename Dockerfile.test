@@ -1,0 +1,14 @@
+FROM carylorrk/woops-bin
+MAINTAINER CaryLorrk <carylorrk@google.com>
+
+WORKDIR /
+
+RUN apt-get install -y build-essential autoconf libtool libgflags-dev libgtest-dev clang libc++-dev 
+RUN git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
+WORKDIR /grpc
+RUN git submodule update --init
+RUN make -j8 && make install
+WORKDIR /grpc/third_party/protobuf
+RUN make install
+
+ENTRYPOINT ["sleep", "infinity"]
