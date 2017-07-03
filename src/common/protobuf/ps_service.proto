@@ -27,7 +27,8 @@ message AssignResponse {
 
 message UpdateRequest {
     string name = 1;
-    bytes delta = 2;
+    int32 iteration = 2;
+    bytes delta = 3;
 }
 
 message UpdateResponse {

@@ -11,4 +11,9 @@ RUN make -j8 && make install
 WORKDIR /grpc/third_party/protobuf
 RUN make install
 
+RUN make -p /root/test/models
+
+COPY grpc-test /root/grpc-test
+WORKDIR /root/grpc-test
+
 ENTRYPOINT ["sleep", "infinity"]

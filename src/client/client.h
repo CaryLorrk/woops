@@ -30,6 +30,7 @@ public:
     void Clock();
     void Sync(const std::string& name);
     void ForceSync();
+    std::string ToString();
 
     ~Client();
 private:
@@ -50,6 +51,7 @@ private:
     std::vector<std::unique_ptr<grpc::ClientContext>> ctxs_;
     std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::UpdateRequest, rpc::UpdateResponse>>> streams_;
     std::vector<std::thread> client_threads_;
+    std::unique_ptr<std::mutex[]> streams_mu_;
 
     void server_thread_func_();
     void client_thread_func_(int server);

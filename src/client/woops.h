@@ -17,6 +17,7 @@ void Update(const std::string& name, const void* data);
 void Clock();
 void Sync(const std::string& name);
 void ForceSync();
+std::string ToString();
 } /* woops */ 
 
 #endif /* end of include guard: WOOPS_CLIENT_WOOPS_H_ */

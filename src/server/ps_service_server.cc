@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "common/storage/dense_storage.h"
 #include "common/logging.h"
 
@@ -12,7 +13,7 @@ PsServiceServer::PsServiceServer(const size_t num_hosts, const int staleness):
     num_hosts_(num_hosts),
     staleness_(staleness)
 {
-    
+        
 }
 
 grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
@@ -37,7 +38,9 @@ grpc::Status PsServiceServer::Assign(grpc::ServerContext* ctx,
     table->cv.wait(lock, [this, &table, req] {
         return table->assign_cnt % num_hosts_ == 0;
     });
-    res->set_param(storage->Serialize(), storage->GetSize());
+    if (req->client() != 0) {
+        res->set_param(storage->Serialize(), storage->GetSize());
+    }
     return grpc::Status::OK;
 
 }
@@ -46,25 +49,40 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) {
     int client = std::stoi(ctx->client_metadata().find("client")->second.data());
     rpc::UpdateRequest req;
+    std::mutex stream_mu;
     while (stream->Read(&req)) {
-        auto& name = req.name();
-        auto& table = GetTable(req.name());
-        auto& storage = table->storage;
-        std::unique_lock<std::mutex> lock(table->mu); 
-        storage->Update(req.delta().data());
-        auto& iteration = table->iterations[client];
-        iteration += 1;
-        table->cv.notify_all();
-        int min;
-        table->cv.wait(lock, [this, &table, iteration, &min]{
-            min = *std::min_element(table->iterations.begin(), table->iterations.end());
-            return min >= iteration - staleness_;
+        std::thread t([this, req, &stream_mu, &stream, client] {
+            auto& table = GetTable(req.name());
+            auto& name = req.name();
+            auto& storage = table->storage;
+            int min;
+            {
+                std::unique_lock<std::mutex> lock(table->mu); 
+                storage->Update(req.delta().data());
+                auto& iteration = table->iterations[client];
+                if (iteration < req.iteration()) {
+                    iteration = req.iteration();
+                }
+                min = *std::min_element(table->iterations.begin(), table->iterations.end());
+                if (min >= iteration - staleness_) {
+                    table->cv.notify_all();
+                } else {
+                    table->cv.wait(lock, [this, &table, iteration, &min]{
+                        min = *std::min_element(table->iterations.begin(), table->iterations.end());
+                        return min >= iteration - staleness_;
+                    });
+                }
+            }
+            rpc::UpdateResponse res;
+            res.set_name(name);
+            res.set_iteration(min);
+            res.set_param(storage->Serialize(), storage->GetSize());
+            {
+                std::lock_guard<std::mutex> lock(stream_mu);
+                stream->Write(res);
+            }
         });
-        rpc::UpdateResponse res;
-        res.set_name(name);
-        res.set_iteration(min);
-        res.set_param(storage->Serialize(), storage->GetSize());
-        stream->Write(res);
+        t.detach();
     }
     return grpc::Status::OK;
 }
@@ -83,22 +101,24 @@ std::unique_ptr<ServerTable>& PsServiceServer::GetTable(const std::string& name)
 
 void PsServiceServer::LocalAssign(const std::string& name, const void* data) {
     auto& table = GetTable(name);
-    std::unique_lock<std::mutex> lock(table->mu);
+    std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Assign(data);
 }
 
 void PsServiceServer::CreateTable(const TableConfig& config, size_t size) {
-    std::unique_lock<std::mutex> lock(tables_mu_);
-    auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
-    auto& table = pair.first->second;
+    {
+        std::lock_guard<std::mutex> lock(tables_mu_);
+        auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
+        auto& table = pair.first->second;
 
-    table->storage = config.server_storage_constructor(size);
-    table->storage->Zerofy();
-    table->size = size;
-    table->element_size = config.element_size;
-    table->assign_cnt = 0;
+        table->storage = config.server_storage_constructor(size);
+        table->storage->Zerofy();
+        table->size = size;
+        table->element_size = config.element_size;
+        table->assign_cnt = 0;
 
-    table->iterations.resize(num_hosts_, -1);
+        table->iterations.resize(num_hosts_, -1);
+    }
     tables_cv_.notify_all();
 }
 

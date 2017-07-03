@@ -41,9 +41,13 @@ void Client::client_thread_func_(int server) {
         auto& table = tables_[res.name()];
         int start = server ? table->host_ends[server-1] : 0;
         int end = table->host_ends[server];
-        std::unique_lock<std::mutex> lock(table->mu);
-        table->cache->Assign(res.param().data(), start, end - start);
-        table->iterations[server] = res.iteration();
+        {
+            std::lock_guard<std::mutex> lock(table->mu);
+            table->cache->Assign(res.param().data(), start, end - start);
+            if (table->iterations[server] < res.iteration()) {
+                table->iterations[server] = res.iteration();
+            }
+        }
         table->cv.notify_all();
     }
 }
@@ -57,6 +61,7 @@ void Client::Initialize(const WoopsConfig& config) {
 
     /* server */
     grpc::ServerBuilder builder;
+    builder.SetMaxMessageSize(100*1024*1024);
     builder.AddListeningPort("0.0.0.0:"+port_, grpc::InsecureServerCredentials());
     service_ = std::make_unique<PsServiceServer>(hosts_.size(), staleness_);
     builder.RegisterService(service_.get());
@@ -66,10 +71,14 @@ void Client::Initialize(const WoopsConfig& config) {
 
     /* stubs */
     LOG(INFO) << "Check servers:";
+    grpc::ChannelArguments channel_args;
+    channel_args.SetInt("grpc.max_message_length", 100*1024*1024);
     for (auto& host: hosts_) {
         while(1) {
-            auto stub = rpc::PsService::NewStub(grpc::CreateChannel(
-                            host+":"+port_, grpc::InsecureChannelCredentials()));
+            auto stub = rpc::PsService::NewStub(grpc::CreateCustomChannel(
+                            host+":"+port_,
+                            grpc::InsecureChannelCredentials(),
+                            channel_args));
             grpc::ClientContext ctx;
             rpc::CheckAliveRequest req;
             rpc::CheckAliveResponse res;
@@ -86,6 +95,7 @@ void Client::Initialize(const WoopsConfig& config) {
     }
 
     /* Client */
+    streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
     for (size_t server = 0; server < hosts_.size(); server++) {
         auto ctx = std::make_unique<grpc::ClientContext>();
         ctx->AddMetadata("client", std::to_string(this_host_));
@@ -136,11 +146,14 @@ void Client::Update(const std::string& name, const void* data) {
 
         rpc::UpdateRequest req;
         req.set_name(name);
+        req.set_iteration(iteration_);
         size_t offset = start * table->element_size;
         size_t size = (end - start) * table->element_size;
         req.set_delta((int8_t*)data + offset, size);
-        streams_[server]->Write(req);
-
+        {
+            std::lock_guard<std::mutex> lock(streams_mu_[server]);
+            streams_[server]->Write(req);
+        }
         start = end;
     }
 }
@@ -188,6 +201,17 @@ void Client::ForceSync() {
             start = end;
         }
     }
+}
+
+std::string Client::ToString() {
+    std::stringstream ss;
+    ss << "Client: " << std::endl;    
+    for (auto& pair: tables_) {
+        ss << pair.first << ": " << pair.second->cache->ToString() << std::endl;
+    }
+    ss << "Server: " << std::endl;
+    ss << service_->ToString();
+    return ss.str();
 }
 
 } /* woops */ 

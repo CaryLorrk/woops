@@ -30,7 +30,7 @@ def main(_):
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    tf.woops_initialize_from_file('../config.in')
+    tf.woops_initialize_from_file('config.in')
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     tf.woops_force_sync()
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--data_dir',
         type=str,
-        default='dataset/mnist/input_data',
+        default='datasets/mnist/input_data',
      help='Directory for storing input data')
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

@@ -54,5 +54,9 @@ void Sync(const std::string& name) {
 void ForceSync() {
     Client::GetInstance().ForceSync();
 }
+
+std::string ToString() {
+    return Client::GetInstance().ToString();
+}
     
 } /* woops */ 
