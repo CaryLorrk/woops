@@ -18,6 +18,8 @@ RUN pip install backports.weakref==1.0rc1 bleach==1.5.0 funcsigs==1.0.2 html5lib
 WORKDIR /root
 ENTRYPOINT ["sleep", "infinity"]
 
+RUN apt-get install -y vim
+
 COPY apps/tensorflow/test /root/test
 
 # Install TensorFlow GPU version.

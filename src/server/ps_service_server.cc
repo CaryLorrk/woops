@@ -25,7 +25,6 @@ grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::Assign(grpc::ServerContext* ctx,
         const rpc::AssignRequest* req, rpc::AssignResponse* res) {
-
     auto& table = GetTable(req->name());
     auto& storage = table->storage;
     if (req->client() == 0) {

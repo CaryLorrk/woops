@@ -23,7 +23,7 @@ start:
 
 run:
 	mkdir -p cache
-	nvidia-docker run -d -P --name $(CONTAINER) -v `pwd`:/root/woops -v `pwd`/cache:/root/.cache $(IMAGE)
+	nvidia-docker run -d -P --name $(CONTAINER) -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v `pwd`/cache:/root/.cache $(IMAGE)
 
 bin-run:
 	nvidia-docker run -d -P --name $(CONTAINER)-bin  $(IMAGE)-bin

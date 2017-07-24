@@ -45,3 +45,6 @@ cache/
 
 apps/helloworld/bin/
 apps/tensorflow/*/datasets/
+
+volume/
+apps/tensorflow/test/dataset/
