@@ -10,11 +10,20 @@ namespace woops
 
 Client::~Client() {
     LOG(INFO) << "Clean up.";
-    for (auto& s: streams_) {
+    for (auto& s: pull_streams_) {
+        s->WritesDone();
+    }
+    for (auto& s: push_streams_) {
         s->WritesDone();
     }
     server_->Shutdown();
-    for (auto& s: streams_) {
+    for (auto& s: pull_streams_) {
+        auto status = s->Finish();
+        if (!status.ok()) {
+            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
+        }
+    }
+    for (auto& s: push_streams_) {
         auto status = s->Finish();
         if (!status.ok()) {
             LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
@@ -36,8 +45,8 @@ void Client::server_thread_func_() {
 }
 
 void Client::client_thread_func_(int server) {
-    rpc::UpdateResponse res;
-    while (streams_[server]->Read(&res)) {
+    rpc::PullResponse res;
+    while (pull_streams_[server]->Read(&res)) {
         auto& table = tables_[res.name()];
         int start = server ? table->host_ends[server-1] : 0;
         int end = table->host_ends[server];
@@ -95,12 +104,17 @@ void Client::Initialize(const WoopsConfig& config) {
     }
 
     /* Client */
-    streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
+    push_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
+    pull_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
     for (size_t server = 0; server < hosts_.size(); server++) {
-        auto ctx = std::make_unique<grpc::ClientContext>();
-        ctx->AddMetadata("client", std::to_string(this_host_));
-        streams_.push_back(stubs_[server]->Update(ctx.get()));
-        ctxs_.push_back(std::move(ctx));
+        auto push_ctx = std::make_unique<grpc::ClientContext>();
+        auto pull_ctx = std::make_unique<grpc::ClientContext>();
+        push_ctx->AddMetadata("client", std::to_string(this_host_));
+        pull_ctx->AddMetadata("client", std::to_string(this_host_));
+        push_streams_.push_back(stubs_[server]->Update(push_ctx.get()));
+        pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
+        push_ctxs_.push_back(std::move(push_ctx));
+        pull_ctxs_.push_back(std::move(pull_ctx));
         client_threads_.emplace_back(&Client::client_thread_func_, this, server);
     }
     std::this_thread::sleep_for(100ms);
@@ -151,8 +165,8 @@ void Client::Update(const std::string& name, const void* data) {
         size_t size = (end - start) * table->element_size;
         req.set_delta((int8_t*)data + offset, size);
         {
-            std::lock_guard<std::mutex> lock(streams_mu_[server]);
-            streams_[server]->Write(req);
+            std::lock_guard<std::mutex> lock(push_streams_mu_[server]);
+            push_streams_[server]->Write(req);
         }
         start = end;
     }
@@ -165,11 +179,22 @@ void Client::Clock() {
 void Client::Sync(const std::string& name) {
     auto& table = tables_[name];
     std::unique_lock<std::mutex> lock(table->mu);
-    table->cv.wait(lock, [this, &name, &table]{
-        int min = *std::min_element(
-                table->iterations.begin(), table->iterations.end());
-        return min >= iteration_ - staleness_ - 1;
-    });
+    int min = *std::min_element(
+            table->iterations.begin(), table->iterations.end());
+    if (min < iteration_ - staleness_ - 1) {
+        rpc::PullRequest req;
+        req.set_name(name);
+        req.set_iteration(iteration_);
+        for (int server = 0; server < hosts_.size(); ++server) {
+            pull_streams_[server]->Write(req);
+        }
+
+        table->cv.wait(lock, [this, &name, &table]{
+            int min = *std::min_element(
+                    table->iterations.begin(), table->iterations.end());
+            return min >= iteration_ - staleness_ - 1;
+        });
+    }
 }
 
 void Client::ForceSync() {

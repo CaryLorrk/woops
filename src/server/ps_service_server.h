@@ -21,6 +21,8 @@ public:
             const rpc::AssignRequest* req, rpc::AssignResponse* res) override;
     grpc::Status Update(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;
+    grpc::Status Pull(grpc::ServerContext* ctx,
+            grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
     void LocalAssign(const std::string& name, const void* data);
     void CreateTable(const TableConfig& config, size_t size);
     std::string ToString();
