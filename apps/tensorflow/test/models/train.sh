@@ -2,8 +2,8 @@
 
 DATASETS_DIR=/root/volume/datasets
 DATASET=cifar10
-MODEL=cifarnet
-TRAIN_DIR=/root/volume/log/cifar10_cifarnet-base/train
+MODEL=inception_v3
+TRAIN_DIR=/tmp/log/cifar10_cifarnet-base/train
 OPTIMIZER=sgd
 python models/slim/train_image_classifier.py \
     --train_dir=$TRAIN_DIR \
