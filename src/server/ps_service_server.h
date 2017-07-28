@@ -22,6 +22,7 @@ public:
     grpc::Status Update(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;
     void LocalAssign(const std::string& name, const void* data);
+    void LocalUpdate(const std::string& name, const void* delta);
     void CreateTable(const TableConfig& config, size_t size);
     std::string ToString();
 

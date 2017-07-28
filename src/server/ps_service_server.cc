@@ -104,6 +104,12 @@ void PsServiceServer::LocalAssign(const std::string& name, const void* data) {
     table->storage->Assign(data);
 }
 
+void PsServiceServer::LocalUpdate(const std::string& name, const void* delta) {
+    auto& table = GetTable(name);
+    std::lock_guard<std::mutex> lock(table->mu);
+    table->storage->Update(delta);
+}
+
 void PsServiceServer::CreateTable(const TableConfig& config, size_t size) {
     {
         std::lock_guard<std::mutex> lock(tables_mu_);

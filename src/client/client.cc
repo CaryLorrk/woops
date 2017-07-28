@@ -143,13 +143,21 @@ void Client::Update(const std::string& name, const void* data) {
     int start = 0;
     for (size_t server = 0; server < hosts_.size(); ++server) {
         int end = ends[server];
+        size_t size = (end - start) * table->element_size;
+        size_t offset = start * table->element_size;
+        int8_t* offset_data = (int8_t*)data + offset;
+
+        if (server == this_host_) {
+            service_->LocalUpdate(name, offset_data);
+            table->iterations[server] = iteration_;
+            continue;
+        }
+
 
         rpc::UpdateRequest req;
         req.set_name(name);
         req.set_iteration(iteration_);
-        size_t offset = start * table->element_size;
-        size_t size = (end - start) * table->element_size;
-        req.set_delta((int8_t*)data + offset, size);
+        req.set_delta(offset_data, size);
         {
             std::lock_guard<std::mutex> lock(streams_mu_[server]);
             streams_[server]->Write(req);
