@@ -28,6 +28,8 @@ x_train = [1, 2, 3, 4]
 y_train = [0, -1, -2, -3]
 
 tf.woops_initialize_from_file("config.in")
+for var in tf.trainable_variables():
+    tf.woops_register_trainable(str(var.name[:-2]))
 # training loop
 init = tf.global_variables_initializer()
 sess = tf.Session()
