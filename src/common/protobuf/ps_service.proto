@@ -5,6 +5,7 @@ service PsService {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
     rpc Assign(AssignRequest) returns (AssignResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
+    rpc Pull(stream PullRequest) returns (stream PullResponse) {}
 }
 
 message CheckAliveRequest {
@@ -32,6 +33,14 @@ message UpdateRequest {
 }
 
 message UpdateResponse {
+}
+
+message PullRequest {
+    string name = 1;
+    int32 iteration = 2;
+}
+
+message PullResponse {
     string name = 1;
     int32 iteration = 2;
     bytes param = 3;

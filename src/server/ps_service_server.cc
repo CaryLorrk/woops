@@ -48,8 +48,29 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) {
     int client = std::stoi(ctx->client_metadata().find("client")->second.data());
     rpc::UpdateRequest req;
-    std::mutex stream_mu;
     while (stream->Read(&req)) {
+        auto& table = GetTable(req.name());
+        auto& storage = table->storage;
+        std::unique_lock<std::mutex> lock(table->mu); 
+        storage->Update(req.delta().data());
+        auto& iteration = table->iterations[client];
+        if (iteration < req.iteration()) {
+            iteration = req.iteration();
+        }
+        int min = *std::min_element(table->iterations.begin(), table->iterations.end());
+        if (min >= iteration - staleness_) {
+            table->cv.notify_all();
+        }
+    }
+    return grpc::Status::OK;
+}
+
+grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
+        grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) {
+    int client = std::stoi(ctx->client_metadata().find("client")->second.data());
+    rpc::PullRequest req;
+    std::mutex stream_mu;
+    while(stream->Read(&req)) {
         std::thread t([this, req, &stream_mu, &stream, client] {
             auto& table = GetTable(req.name());
             auto& name = req.name();
@@ -57,22 +78,13 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
             int min;
             {
                 std::unique_lock<std::mutex> lock(table->mu); 
-                storage->Update(req.delta().data());
                 auto& iteration = table->iterations[client];
-                if (iteration < req.iteration()) {
-                    iteration = req.iteration();
-                }
-                min = *std::min_element(table->iterations.begin(), table->iterations.end());
-                if (min >= iteration - staleness_) {
-                    table->cv.notify_all();
-                } else {
-                    table->cv.wait(lock, [this, &table, iteration, &min]{
-                        min = *std::min_element(table->iterations.begin(), table->iterations.end());
-                        return min >= iteration - staleness_;
-                    });
-                }
+                table->cv.wait(lock, [this, &table, iteration, &min]{
+                    min = *std::min_element(table->iterations.begin(), table->iterations.end());
+                    return min >= iteration - staleness_;
+                });
             }
-            rpc::UpdateResponse res;
+            rpc::PullResponse res;
             res.set_name(name);
             res.set_iteration(min);
             res.set_param(storage->Serialize(), storage->GetSize());
@@ -82,6 +94,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
             }
         });
         t.detach();
+        
     }
     return grpc::Status::OK;
 }
