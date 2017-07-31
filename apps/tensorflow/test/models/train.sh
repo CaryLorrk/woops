@@ -3,9 +3,11 @@
 DATASETS_DIR=/root/volume/datasets
 DATASET=cifar10
 MODEL=inception_v3
-TRAIN_DIR=/tmp/cifar10_cifarnet-aggresive/train
+TRAIN_DIR=/root/volume/log/cifar10-inception_v3-2/train
 OPTIMIZER=sgd
+WOOPS_CONFIG=../config.in
 python models/slim/train_image_classifier.py \
+    --woops_config_file=${WOOPS_CONFIG} \
     --train_dir=$TRAIN_DIR \
     --dataset_name=$DATASET \
     --dataset_split_name=train \
