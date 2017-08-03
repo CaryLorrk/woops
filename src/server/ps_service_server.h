@@ -24,7 +24,7 @@ public:
     grpc::Status Pull(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
     void LocalAssign(const std::string& name, const void* data);
-    void LocalUpdate(const std::string& name, const void* delta);
+    void LocalUpdate(const std::string& name, const void* delta, const int iteration, int this_host);
     void CreateTable(const TableConfig& config, size_t size);
     std::string ToString();
 

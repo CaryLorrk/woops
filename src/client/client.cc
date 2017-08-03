@@ -95,6 +95,11 @@ void Client::Initialize(const WoopsConfig& config) {
             if (res.status()) {
                 LOG(INFO) << host << " is up.";
                 stubs_.push_back(std::move(stub));
+                auto pull_stub = rpc::PsService::NewStub(grpc::CreateCustomChannel(
+                                host+":"+port_,
+                                grpc::InsecureChannelCredentials(),
+                                channel_args));
+                pull_stubs_.push_back(std::move(pull_stub));
                 break;
             } else {
                 LOG(WARNING) << "Failed to connect to " << host <<".";
@@ -112,7 +117,7 @@ void Client::Initialize(const WoopsConfig& config) {
         push_ctx->AddMetadata("client", std::to_string(this_host_));
         pull_ctx->AddMetadata("client", std::to_string(this_host_));
         push_streams_.push_back(stubs_[server]->Update(push_ctx.get()));
-        pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
+        pull_streams_.push_back(pull_stubs_[server]->Pull(pull_ctx.get()));
         push_ctxs_.push_back(std::move(push_ctx));
         pull_ctxs_.push_back(std::move(pull_ctx));
         client_threads_.emplace_back(&Client::client_thread_func_, this, server);
@@ -162,11 +167,10 @@ void Client::Update(const std::string& name, const void* data) {
         int8_t* offset_data = (int8_t*)data + offset;
 
         if (server == this_host_) {
-            service_->LocalUpdate(name, offset_data);
+            service_->LocalUpdate(name, offset_data, iteration_, this_host_);
             table->iterations[server] = iteration_;
             continue;
         }
-
 
         rpc::UpdateRequest req;
         req.set_name(name);

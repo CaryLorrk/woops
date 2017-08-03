@@ -52,6 +52,8 @@ private:
     std::unique_ptr<std::mutex[]> push_streams_mu_;
     std::vector<std::unique_ptr<grpc::ClientContext>> push_ctxs_;
     std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::UpdateRequest, rpc::UpdateResponse>>> push_streams_;
+
+    std::vector<std::unique_ptr<rpc::PsService::Stub>> pull_stubs_;
     std::vector<std::unique_ptr<grpc::ClientContext>> pull_ctxs_;
     std::unique_ptr<std::mutex[]> pull_streams_mu_;
     std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PullRequest, rpc::PullResponse>>> pull_streams_;

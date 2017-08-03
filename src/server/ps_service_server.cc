@@ -78,10 +78,10 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
             int min;
             {
                 std::unique_lock<std::mutex> lock(table->mu); 
-                auto& iteration = table->iterations[client];
+                auto iteration = req.iteration();
                 table->cv.wait(lock, [this, &table, iteration, &min]{
                     min = *std::min_element(table->iterations.begin(), table->iterations.end());
-                    return min >= iteration - staleness_;
+                    return min >= iteration - staleness_ - 1;
                 });
             }
             rpc::PullResponse res;
@@ -117,10 +117,15 @@ void PsServiceServer::LocalAssign(const std::string& name, const void* data) {
     table->storage->Assign(data);
 }
 
-void PsServiceServer::LocalUpdate(const std::string& name, const void* delta) {
+void PsServiceServer::LocalUpdate(const std::string& name, const void* delta, const int iteration, int this_host) {
     auto& table = GetTable(name);
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Update(delta);
+    table->iterations[this_host] = iteration;
+    int min = *std::min_element(table->iterations.begin(), table->iterations.end());
+    if (min >= iteration - staleness_) {
+        table->cv.notify_all();
+    }
 }
 
 void PsServiceServer::CreateTable(const TableConfig& config, size_t size) {
