@@ -10,8 +10,8 @@ import tensorflow as tf
 
 # Model parameters
 with tf.variable_scope("test"):
-    W = tf.Variable([.3], tf.float32, name='weight')
-    b = tf.Variable([-.3], tf.float32, name='bias')
+    W = tf.Variable([.3], dtype=tf.float32, name='weight')
+    b = tf.Variable([-.3], dtype=tf.float32, name='bias')
 
 # Model input and output
 x = tf.placeholder(tf.float32)
@@ -28,8 +28,6 @@ x_train = [1, 2, 3, 4]
 y_train = [0, -1, -2, -3]
 
 tf.woops_initialize_from_file("config.in")
-for var in tf.trainable_variables():
-    tf.woops_register_trainable(str(var.name[:-2]))
 # training loop
 init = tf.global_variables_initializer()
 sess = tf.Session()

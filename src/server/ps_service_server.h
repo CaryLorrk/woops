@@ -14,7 +14,7 @@ namespace woops
 class PsServiceServer final: public rpc::PsService::Service
 {
 public:
-    PsServiceServer(const size_t num_hosts, const int staleness);
+    PsServiceServer(int this_host, size_t num_hosts, int staleness);
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
             const rpc::CheckAliveRequest* req, rpc::CheckAliveResponse* res) override;
     grpc::Status Assign(grpc::ServerContext* ctx,
@@ -24,11 +24,12 @@ public:
     grpc::Status Pull(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
     void LocalAssign(const std::string& name, const void* data);
-    void LocalUpdate(const std::string& name, const void* delta, const int iteration, int this_host);
+    void LocalUpdate(const std::string& name, const void* delta, int iteration);
     void CreateTable(const TableConfig& config, size_t size);
     std::string ToString();
 
 private:
+    int this_host_;
     size_t num_hosts_;
     int staleness_;
     std::map<std::string, std::unique_ptr<ServerTable>> tables_;

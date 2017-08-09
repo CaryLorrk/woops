@@ -9,7 +9,8 @@
 
 namespace woops
 {
-PsServiceServer::PsServiceServer(const size_t num_hosts, const int staleness):
+PsServiceServer::PsServiceServer(int this_host, size_t num_hosts, int staleness):
+    this_host_(this_host),
     num_hosts_(num_hosts),
     staleness_(staleness)
 {
@@ -117,11 +118,11 @@ void PsServiceServer::LocalAssign(const std::string& name, const void* data) {
     table->storage->Assign(data);
 }
 
-void PsServiceServer::LocalUpdate(const std::string& name, const void* delta, const int iteration, int this_host) {
+void PsServiceServer::LocalUpdate(const std::string& name, const void* delta, int iteration) {
     auto& table = GetTable(name);
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Update(delta);
-    table->iterations[this_host] = iteration;
+    table->iterations[this_host_] = iteration;
     int min = *std::min_element(table->iterations.begin(), table->iterations.end());
     if (min >= iteration - staleness_) {
         table->cv.notify_all();

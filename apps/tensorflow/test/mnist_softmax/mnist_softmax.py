@@ -31,8 +31,6 @@ def main(_):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     tf.woops_initialize_from_file('config.in')
-    for var in tf.trainable_variables():
-        tf.woops_register_trainable(str(var.name[:-2]))
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     tf.woops_force_sync()

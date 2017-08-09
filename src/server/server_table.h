@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <atomic>
 
 #include "common/storage/storage.h"
 
@@ -19,7 +20,7 @@ struct ServerTable {
     std::condition_variable cv;
 
 
-    unsigned long assign_cnt;
+    unsigned assign_cnt;
 }; 
 } /* woops */ 
 
