@@ -165,17 +165,15 @@ void Client::Update(const std::string& name, const void* data) {
 
         if (server == this_host_) {
             service_->LocalUpdate(name, offset_data, iteration_);
-            continue;
-        }
-
-        rpc::UpdateRequest req;
-        req.set_name(name);
-        req.set_iteration(iteration_);
-        req.set_delta(offset_data, size);
-        {
+        } else {
+            rpc::UpdateRequest req;
+            req.set_name(name);
+            req.set_iteration(iteration_);
+            req.set_delta(offset_data, size);
             std::lock_guard<std::mutex> lock(push_streams_mu_[server]);
             push_streams_[server]->Write(req);
         }
+
         start = end;
     }
 }
