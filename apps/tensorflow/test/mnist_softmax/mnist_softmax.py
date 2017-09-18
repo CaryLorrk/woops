@@ -7,6 +7,7 @@ import sys
 
 from dataset import read_data_sets
 import tensorflow as tf
+from tensorflow.python.client import timeline
 
 FLAGS = None
 
@@ -39,11 +40,24 @@ def main(_):
     # Train
     for i in range(10000):
         batch_xs, batch_ys = mnist.train.next_batch(100)
-        sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
-        tf.woops_clock()
         if i % 1000 == 0:
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+            sess.run(train_step,
+                     feed_dict={x: batch_xs, y_: batch_ys},
+                     options=run_options,
+                     run_metadata=run_metadata)
+            tl = timeline.Timeline(run_metadata.step_stats)
+            ctf = tl.generate_chrome_trace_format()
+            with open('timeline-%d.json' % (i), 'w') as f:
+                f.write(ctf)
             print(sess.run(accuracy, feed_dict={x: mnist.test.images,
                                         y_: mnist.test.labels}))
+        else:
+            sess.run(train_step,
+                     feed_dict={x: batch_xs, y_: batch_ys})
+
+        tf.woops_clock()
 
     # Test trained model
     print(sess.run(accuracy, feed_dict={x: mnist.test.images,
