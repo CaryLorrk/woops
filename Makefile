@@ -29,6 +29,6 @@ all: build
 clean:
 	$(RM) $(LIB) $(PS_OBJ) $(PS_DEP) $(PS_PB_SRC) $(PS_PB_HEADER) $(PS_PB_OBJ)
 
-.PHONY: all clean build test
+.PHONY: all clean allclean build test
 
 include $(SRC)/woops.mk

@@ -3,14 +3,16 @@
 
 #include <string>
 
+#include "common/protobuf/woops_config.pb.h"
+
 #include "table.h"
-#include "woops_config.h"
 #include "table_config.h"
 
 namespace woops
 {
 void InitializeFromFile(const std::string& configfile);
-void Initialize(const WoopsConfig& config); 
+void Initialize();
+void Initialize(const WoopsConfigProto& configproto); 
 void CreateTable(const TableConfig& config);
 void LocalAssign(const std::string& name, const void* data);
 void Update(const std::string& name, const void* data);

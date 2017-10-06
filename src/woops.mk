@@ -3,8 +3,8 @@ PS_OBJ = $(PS_SRC:.cc=.o)
 PS_DEP = $(PS_OBJ:.o=.d)
 
 PS_PB_PROTO := $(shell find $(SRC) -type f -name "*.proto")
-PS_PB_SRC := $(PS_PB_PROTO:.proto=.pb.cc) $(PS_PB_PROTO:.proto=.grpc.pb.cc)
-PS_PB_HEADER := $(PS_PB_PROTO:.proto=.pb.h) $(PS_PB_PROTO:.proto=.grpc.pb.h)
+PS_PB_SRC := $(PS_PB_PROTO:.proto=.pb.cc)
+PS_PB_HEADER := $(PS_PB_PROTO:.proto=.pb.h)
 PS_PB_OBJ := $(PS_PB_PROTO:.proto=.pb.o)
 
 DEPFLAGS = -MF"$@" -MM -MP -MT"$@" -MT"$(<:.cc=.o)"
@@ -27,9 +27,6 @@ $(PS_DEP): $(PS_PB_SRC)
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) $(INCFLAGS) -c $< -o $@
-
-%.grpc.pb.cc: %.proto
-	$(PROTOC) -I $(shell dirname $@) --grpc_out=$(shell dirname $@) --plugin=protoc-gen-grpc=$(GRPC_CPP_PLUGIN_PATH) $<
 
 %.pb.cc: %.proto
 	$(PROTOC) -I $(shell dirname $@) --cpp_out=$(shell dirname $@) $<

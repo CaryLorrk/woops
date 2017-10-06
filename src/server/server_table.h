@@ -15,12 +15,9 @@ struct ServerTable {
     std::unique_ptr<Storage> storage;
     size_t size;
     size_t element_size;
-    std::vector<int> iterations;
+    std::vector<unsigned> iterations;
     std::mutex mu;
     std::condition_variable cv;
-
-
-    unsigned assign_cnt;
 }; 
 } /* woops */ 
 

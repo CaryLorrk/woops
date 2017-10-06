@@ -4,11 +4,9 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-
-#include <grpc++/grpc++.h>
+#include <vector>
 
 #include "common/storage/storage.h"
-#include "common/protobuf/ps_service.pb.h"
 #include "table_config.h"
 
 namespace woops
@@ -19,8 +17,8 @@ struct Table {
     size_t element_size;
     std::mutex  mu;
     std::condition_variable cv;
-    std::vector<int> iterations;
-    std::vector<int> host_ends;
+    std::vector<unsigned> iterations;
+    std::vector<unsigned> host_ends;
 };
 } /* woops */ 
 

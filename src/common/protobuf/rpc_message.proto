@@ -1,0 +1,46 @@
+syntax='proto3';
+package woops.rpc;
+message Message {
+    enum Command {
+        UPDATE = 0;
+        UPDATE_REQ = 1;
+        PULL = 2;
+        PULL_REQ = 3;
+        FORCE_SYNC = 4;
+    };
+
+    Command cmd = 1;
+
+    Update update = 2;
+    UpdateReq update_req = 3;
+    Pull pull = 4;
+    PullReq pull_req = 5;
+    ForceSync force_sync = 6;
+}
+
+message Update {
+    string tablename = 1;
+    uint32 iteration = 2;
+    bytes delta = 3;
+}
+
+message UpdateReq {
+    string tablename = 1;
+    uint32 iteration = 2;
+}
+
+message Pull {
+    string tablename = 1;
+    uint32 iteration = 2;
+    bytes parameter = 3;
+}
+
+message PullReq {
+    string tablename = 1;
+    uint32 iteration = 2;
+}
+
+message ForceSync {
+    repeated string tablenames = 1;
+    repeated bytes parameters = 2;
+}

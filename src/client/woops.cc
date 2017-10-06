@@ -4,9 +4,8 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
-#include "common/protobuf/woops_config.pb.h"
 #include "common/logging.h"
-#include "client.h"
+#include "common/context.h"
 
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
@@ -15,48 +14,52 @@ namespace woops
 {
 
 void InitializeFromFile(const std::string& configfile) {
-    WoopsConfigProto config_proto;
+    WoopsConfigProto configproto;
+
     std::ifstream ifs(configfile);
     if (!ifs) {
         LOG(FATAL) << "Configure file opening failed.";
     }
     IstreamInputStream iis(&ifs);
-    TextFormat::Parse(&iis, &config_proto);
+    TextFormat::Parse(&iis, &configproto);
 
-    WoopsConfig config(config_proto);
-    Initialize(config);
+    Initialize(configproto);
 }
 
-void Initialize(const WoopsConfig& config){
-    Client::GetInstance().Initialize(config);
+void Initialize() {
+    Context::Initialize();
+}
+
+void Initialize(const WoopsConfigProto& configproto){
+    Context::Initialize(configproto);
 }
 
 void CreateTable(const TableConfig& config){
-    return Client::GetInstance().CreateTable(config);
+    return Context::GetClient().CreateTable(config);
 }
 
 void LocalAssign(const std::string& name, const void* data) {
-    Client::GetInstance().LocalAssign(name, data); 
+    Context::GetClient().LocalAssign(name, data); 
 }
 
 void Update(const std::string& name, const void* data){
-    Client::GetInstance().Update(name, data); 
+    Context::GetClient().Update(name, data); 
 }
 
 void Clock() {
-    Client::GetInstance().Clock();
+    Context::GetClient().Clock();
 }
 
 void Sync(const std::string& name) {
-    Client::GetInstance().Sync(name);
+    Context::GetClient().Sync(name);
 }
 
 void ForceSync() {
-    Client::GetInstance().ForceSync();
+    Context::GetClient().ForceSync();
 }
 
 std::string ToString() {
-    return Client::GetInstance().ToString();
+    return Context::GetClient().ToString();
 }
     
 } /* woops */ 

@@ -19,7 +19,7 @@ public:
 
     void Zerofy() override;
     const void* Serialize() const override;
-    size_t GetSize() const override;
+    size_t GetByteSize() const override;
     void Assign(const void* data, size_t offset = 0, size_t size = -1) override;
     void Update(const void* delta) override;
     std::string ToString() const override;
@@ -52,7 +52,7 @@ const void* DenseStorage<T>::Serialize() const {
 }
 
 template<typename T>
-size_t DenseStorage<T>::GetSize() const {
+size_t DenseStorage<T>::GetByteSize() const {
     return size_ * sizeof(T);
 }
 
