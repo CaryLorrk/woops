@@ -18,7 +18,6 @@ public:
     void Update(const std::string& tablename, const void* delta, unsigned iteration);
     void Read(const std::string& tablename, unsigned in_iter, void* parameter, unsigned& out_iter);
     void CreateTable(const TableConfig& config, size_t size);
-    void HandleForceSyncMasterToServer(unsigned host, rpc::Message msg);
     void HandlePullReq(unsigned host, rpc::Message msg);
     void HandleUpdate(unsigned host, rpc::Message msg);
 

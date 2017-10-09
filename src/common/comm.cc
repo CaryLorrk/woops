@@ -48,23 +48,20 @@ void Comm::SendMessage(unsigned host, const rpc::Message& msg) {
     CodedOutputStream coded_output_stream(&array_output_stream);
     coded_output_stream.WriteVarint32(msg_size);
     msg.SerializeToCodedStream(&coded_output_stream);
-    int numbytes;
-    {
-    std::lock_guard<std::mutex> lock(mu_);
-    numbytes = send(sockfds_[host], pkt.data(), pkt_size, 0);
-
-    }
+    int numbytes = 0;
+    do {
+        std::lock_guard<std::mutex> lock(mu_);
+        numbytes += send(sockfds_[host], pkt.data() + numbytes, pkt_size - numbytes, 0);
+        if (numbytes < 0) {
+            LOG(ERROR);
+            perror("send");
+            exit(1);
+        }
+    } while((size_t)numbytes < pkt_size);
     //if (msg.cmd() == rpc::Message_Command_UPDATE) {
         //auto& update = msg.update();
         //LOG(INFO) << "SendMessage Update host: " << host << ", table: " << update.tablename() << ", iter: " << update.iteration() << ", msg_size: " << msg_size << ", pkt_size: " << pkt_size << ", numbytes: " << numbytes;
     //}
-    if (numbytes < 0) {
-        LOG(ERROR);
-        perror("send");
-        exit(1);
-    } else if (numbytes < pkt_size){
-        LOG(FATAL) << "numbytes: " << numbytes << ", pkt_size: " << pkt_size;
-    }
 }
 
 void *get_in_addr(struct sockaddr *sa)
@@ -254,17 +251,18 @@ size_t Comm::read_msg_size_(int sockfd)
 {
     int8_t buffer[4];
     memset(buffer, '\0', 4);
-    int numbytes = recv(sockfd, buffer, 4, MSG_PEEK);
-    if (numbytes < 0) {
-        LOG(ERROR);
-        perror("recv");
-        exit(1);
-    } else if (numbytes == 0) {
-        LOG(INFO) << Context::Hostname(sockfd_to_host_[sockfd]) << " disconncted";
-        exit(0);
-    } else if (numbytes < 4) {
-        LOG(FATAL) << "numbytes: " << numbytes;
-    }
+    int numbytes;
+    do {
+        numbytes = recv(sockfd, buffer, 4, MSG_PEEK);
+        if (numbytes < 0) {
+            LOG(ERROR);
+            perror("recv");
+            exit(1);
+        } else if (numbytes == 0) {
+            LOG(INFO) << Context::Hostname(sockfd_to_host_[sockfd]) << " disconncted";
+            exit(0);
+        }
+    } while(numbytes < 4);
     google::protobuf::uint32 size;
     ArrayInputStream array_input_stream(buffer, 4);
     CodedInputStream coded_input_stream(&array_input_stream);
@@ -272,7 +270,7 @@ size_t Comm::read_msg_size_(int sockfd)
     return size;
 }
 
-void Comm::parse_msg_dispatch_(unsigned host, std::vector<int8_t> buffer, size_t pkt_size, int numbytes) {
+void Comm::parse_msg_dispatch_(unsigned host, std::vector<int8_t> buffer, size_t pkt_size) {
     ArrayInputStream array_input_stream(buffer.data(), pkt_size);
     CodedInputStream coded_input_stream(&array_input_stream);
 
@@ -304,20 +302,21 @@ void Comm::read_msg_body_(int sockfd)
     size_t msg_size = read_msg_size_(sockfd);
     size_t pkt_size = msg_size + 4;
     std::vector<int8_t> buffer(pkt_size);
+    
+    int numbytes = 0;
+    do {
+        numbytes += recv(sockfd, buffer.data() + numbytes, pkt_size - numbytes, 0);
+        if(numbytes < 0){
+            LOG(ERROR);
+            perror("recv");
+            exit(1);
+        } else if (numbytes == 0) {
+            LOG(INFO) << Context::Hostname(host) << " disconncted";
+            exit(0);
+        } 
+    } while((size_t)numbytes < pkt_size);
 
-    int numbytes = recv(sockfd, buffer.data(), pkt_size, MSG_WAITALL);
-    if(numbytes < 0){
-        LOG(ERROR);
-        perror("recv");
-        exit(1);
-    } else if (numbytes == 0) {
-        LOG(INFO) << Context::Hostname(host) << " disconncted";
-        exit(0);
-    } else if (numbytes < pkt_size) {
-        LOG(FATAL) << "numbytes: " << numbytes << ", pkt_size: " << pkt_size;
-    }
-
-    std::thread(&Comm::parse_msg_dispatch_, this, host, std::move(buffer), pkt_size, numbytes).detach();
+    std::thread(&Comm::parse_msg_dispatch_, this, host, std::move(buffer), pkt_size).detach();
 }
 
 void Comm::set_host_events(int epollfd, std::vector<epoll_event>& host_events) {

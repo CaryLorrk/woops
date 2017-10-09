@@ -2,6 +2,8 @@ FROM carylorrk/woops
 
 MAINTAINER CaryLorrk <carylorrk@google.com>
 
+
+# Setup ssh
 RUN apt-get install -y --no-install-recommends \
         openssh-server
 
@@ -13,14 +15,22 @@ RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && sed -ri 's/#Use
 RUN pip install backports.weakref==1.0rc1 bleach==1.5.0 funcsigs==1.0.2 html5lib==0.9999999 markdown==2.2.0 mock==2.0.0 pbr==3.1.1 protobuf==3.3.0 werkzeug==0.12.2
 
 
-WORKDIR /root
-ENTRYPOINT ["sleep", "infinity"]
+# Setup gRPC
+WORKDIR /
 
+RUN apt-get install -y build-essential autoconf libtool libgflags-dev libgtest-dev clang libc++-dev 
+RUN git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
+WORKDIR /grpc
+RUN git submodule update --init
+RUN make -j8 && make install
+WORKDIR /grpc/third_party/protobuf
+RUN make install
+
+WORKDIR /root
+
+# other test utilities
 RUN apt-get install -y vim
 
-COPY apps/tensorflow/test /root/test
+ENTRYPOINT ["sleep", "infinity"]
 
-# Install TensorFlow GPU version.
-COPY apps/tensorflow/tensorflow/tensorflow-*.whl /root
-RUN pip install /root/tensorflow-*.whl
-RUN rm -f /root/tensorflow-*.whl
+

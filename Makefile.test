@@ -1,0 +1,33 @@
+IMAGE=carylorrk/woops-test
+CONTAINER=woops-test
+NUM=2
+
+all: build
+
+attach:
+	nvidia-docker exec -it $(CONTAINER)-$(INDEX) bash
+
+rmf:
+	for i in `seq -w $(NUM)`; do \
+		docker rm -f $(CONTAINER)-$${i}; \
+	done
+
+stop:
+	for i in `seq -w $(NUM)`; do \
+		docker stop $(CONTAINER)-$${i}; \
+	done
+
+start:
+	for i in `seq -w $(NUM)`; do \
+		nvidia-docker start $(CONTAINER)-$${i}; \
+	done
+
+run:
+	for i in `seq -w $(NUM)`; do \
+		nvidia-docker run -d --name $(CONTAINER)-$${i} -v `pwd`/volume:/root/volume -v `pwd`:/root/woops $(IMAGE); \
+	done
+
+build:
+	docker build -f Dockerfile.test -t $(IMAGE) .
+
+.PHONY: build

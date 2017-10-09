@@ -38,7 +38,7 @@ private:
     void pull_func_();
     size_t read_msg_size_(int sockfd);
     void read_msg_body_(int sockfd);
-    void parse_msg_dispatch_(unsigned host, std::vector<int8_t> buffer, size_t pkt_size,int numbytes);
+    void parse_msg_dispatch_(unsigned host, std::vector<int8_t> buffer, size_t pkt_size);
     void set_host_events(int epollfd, std::vector<epoll_event>& host_events);
 
 

@@ -80,9 +80,9 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
 }
 
 void Server::HandlePullReq(unsigned host, rpc::Message msg) {
-    auto& cmd_msg = msg.pull_req();
-    auto& tablename = cmd_msg.tablename();
-    unsigned iteration = cmd_msg.iteration();
+    auto& cmd = msg.pull_req();
+    auto& tablename = cmd.tablename();
+    unsigned iteration = cmd.iteration();
     //LOG(INFO) << "HandlePullReq from host: " << host << " table: " << tablename << " iteration " << iteration;
     auto& table = GetTable(tablename);
     auto& storage = table->storage;
@@ -103,16 +103,15 @@ void Server::HandlePullReq(unsigned host, rpc::Message msg) {
     Context::GetComm().SendMessage(host, res);
 }
 
-
 void Server::HandleUpdate(unsigned host, rpc::Message msg) {
-    auto& cmd_msg = msg.update();
-    auto& tablename = cmd_msg.tablename();
-    unsigned iteration = cmd_msg.iteration();
+    auto& cmd = msg.update();
+    auto& tablename = cmd.tablename();
+    unsigned iteration = cmd.iteration();
     //LOG(INFO) << "HandleUpdate from host: " << host << " table: " << tablename << " iteration " << iteration;
     auto& table = GetTable(tablename);
     auto& storage = table->storage;
     std::lock_guard<std::mutex> lock(table->mu);
-    storage->Update(cmd_msg.delta().data());
+    storage->Update(cmd.delta().data());
     if (table->iterations[host] < iteration) {
         table->iterations[host] = iteration;
     }

@@ -144,10 +144,10 @@ void Client::HandleForceSync(unsigned host, const rpc::Message& msg){
     if(host != 0) {
         LOG(FATAL) << "ForceSync from host " << host;
     }
-    auto& cmd_msg = msg.force_sync();
+    auto& cmd = msg.force_sync();
     //LOG(INFO) << "HandleForceSync from host " << host; 
-    for (int i = 0; i  < cmd_msg.tablenames_size(); ++i) {
-        Context::GetServer().Assign(cmd_msg.tablenames(i), cmd_msg.parameters(i).data());
+    for (int i = 0; i  < cmd.tablenames_size(); ++i) {
+        Context::GetServer().Assign(cmd.tablenames(i), cmd.parameters(i).data());
     }
     std::lock_guard<std::mutex> lock(sync_mu_);
     sync_ = true;
@@ -155,15 +155,15 @@ void Client::HandleForceSync(unsigned host, const rpc::Message& msg){
 }
 
 void Client::HandlePull(unsigned host, const rpc::Message& msg) {
-    auto& cmd_msg = msg.pull();
-    auto& tablename = cmd_msg.tablename();
-    unsigned iteration = cmd_msg.iteration();
+    auto& cmd = msg.pull();
+    auto& tablename = cmd.tablename();
+    unsigned iteration = cmd.iteration();
     //LOG(INFO) << "HandlePull from host " << host << " table " << tablename << " iteration " << iteration;
     auto& table = tables_[tablename];
     int start = host ? table->host_ends[host-1] : 0;
     int end = table->host_ends[host];
     std::lock_guard<std::mutex> lock(table->mu);
-    table->cache->Assign(cmd_msg.parameter().data(), start, end - start);
+    table->cache->Assign(cmd.parameter().data(), start, end - start);
     if (table->iterations[host] < iteration) {
         table->iterations[host] = iteration;
     }
