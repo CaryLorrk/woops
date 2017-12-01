@@ -46,7 +46,7 @@ for i in range(10):
              run_metadata=run_metadata)
     tl = timeline.Timeline(run_metadata.step_stats)
     ctf = tl.generate_chrome_trace_format()
-    with open('linear-timeline-%d.json' % (i), 'w') as f:
+    with open('/tmp/linear-timeline-%d.json' % (i), 'w') as f:
         f.write(ctf)
     tf.woops_clock()
     curr_W, curr_b, curr_loss = sess.run([W, b, loss], {x: x_train, y: y_train})

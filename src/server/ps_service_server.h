@@ -4,8 +4,8 @@
 #include <map>
 #include <string>
 
-#include "common/protobuf/ps_service.grpc.pb.h"
-#include "common/storage/storage.h"
+#include "util/protobuf/ps_service.grpc.pb.h"
+#include "util/storage/storage.h"
 #include "client/table.h"
 #include "server_table.h"
 

@@ -7,7 +7,7 @@
 #include <vector>
 #include <atomic>
 
-#include "common/storage/storage.h"
+#include "util/storage/storage.h"
 
 namespace woops
 {

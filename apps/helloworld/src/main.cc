@@ -1,12 +1,12 @@
 #include <iostream>
 #include <thread>
 #include <algorithm>
-#include "client/woops.h"
-#include "client/woops_config.h"
-#include "client/table_config.h"
-#include "common/storage/storage.h"
-#include "common/storage/dense_storage.h"
-#include "common/logging.h"
+#include "woops.h"
+#include "util/config/woops_config.h"
+#include "util/config/table_config.h"
+#include "util/storage/storage.h"
+#include "util/storage/dense_storage.h"
+#include "util/logging.h"
 
 constexpr int SIZE = 3;
 constexpr int NUM_TABLE = 1;

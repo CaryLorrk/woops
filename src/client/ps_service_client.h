@@ -1,7 +1,7 @@
 #ifndef WOOPS_CLIENT_PS_SERVICE_CLIENT_H_
 #define WOOPS_CLIENT_PS_SERVICE_CLIENT_H_
 
-#include "common/protobuf/ps_service.grpc.pb.h"
+#include "util/protobuf/ps_service.grpc.pb.h"
 
 namespace woops
 {

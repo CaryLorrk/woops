@@ -1,0 +1,51 @@
+IMAGE=carylorrk/woops-test
+CONTAINER=woops-test
+NUM=2
+
+all: build
+
+attach:
+	nvidia-docker exec -it $(CONTAINER)-$(INDEX) bash
+
+rmf:
+	for i in `seq -w $(NUM)`; do \
+		docker rm -f $(CONTAINER)-$${i}; \
+	done
+
+stop:
+	for i in `seq -w $(NUM)`; do \
+		docker stop $(CONTAINER)-$${i}; \
+	done
+
+start:
+	touch config.in
+	echo staleness: 0 >> config.in
+	for i in `seq -w $(NUM)`; do \
+		nvidia-docker start $(CONTAINER)-$${i}; \
+		ip=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(CONTAINER)-$${i}`; \
+		echo hosts: \"$${ip}\" >> config.in; \
+	done
+	for i in `seq -w $(NUM)`; do \
+		docker cp config.in $(CONTAINER)-$${i}:/root; \
+		docker exec woops-test-$${i} sh -c 'echo this_host: \"`hostname -i`\" >> /root/config.in'; \
+	done
+	rm -f config.in
+
+run:
+	touch config.in
+	echo staleness: 0 >> config.in
+	for i in `seq -w $(NUM)`; do \
+		nvidia-docker run -d --privileged --name $(CONTAINER)-$${i} -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v /var/lib/docker:/var/lib/docker -v /:/host $(IMAGE); \
+		ip=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(CONTAINER)-$${i}`; \
+		echo hosts: \"$${ip}\" >> config.in; \
+	done
+	for i in `seq -w $(NUM)`; do \
+		docker cp config.in $(CONTAINER)-$${i}:/root; \
+		docker exec woops-test-$${i} sh -c 'echo this_host: \"`hostname -i`\" >> /root/config.in'; \
+	done
+	rm -f config.in
+
+build:
+	docker build -f Dockerfile.test -t $(IMAGE) .
+
+.PHONY: build

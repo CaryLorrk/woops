@@ -2,9 +2,10 @@ FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 MAINTAINER CaryLorrk <carylorrk@gmail.com>
 
-ENV DOCKERFILE_APT_UPDATE_DATE 20170621
+ENV DOCKERFILE_APT_UPDATE_DATE 20171121
 
-RUN apt-get update 
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
+        apt-get update 
 RUN apt-get install -y --no-install-recommends \
         build-essential \
         curl \
@@ -21,29 +22,19 @@ RUN apt-get install -y --no-install-recommends \
         zip \
         zlib1g-dev \
         openjdk-8-jdk \
-        openjdk-8-jre-headless
+        openjdk-8-jre-headless \
+        g++-7
 
 RUN curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
     rm get-pip.py
 
 RUN pip --no-cache-dir install \
-        ipykernel \
-        jupyter \
         matplotlib \
         numpy \
         scipy \
         sklearn \
         pandas
-#RUN python -m ipykernel.kernelspec
-
-# Set up our notebook config.
-COPY apps/tensorflow/tensorflow/tensorflow/tools/docker/jupyter_notebook_config.py /root/.jupyter/
-
-# Jupyter has issues with being run directly:
-#   https://github.com/ipython/ipython/issues/7062
-# We just add a little wrapper script.
-COPY apps/tensorflow/tensorflow/tensorflow/tools/docker/run_jupyter.sh /
 
 # Set up Bazel.
 

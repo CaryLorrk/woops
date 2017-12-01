@@ -1,5 +1,5 @@
-#ifndef WOOPS_COMMON_LOGGING_H_
-#define WOOPS_COMMON_LOGGING_H_
+#ifndef WOOPS_UTIL_LOGGING_H_
+#define WOOPS_UTIL_LOGGING_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,4 +70,4 @@ private:
 
 
 
-#endif /* end of include guard: WOOPS_COMMON_LOGGING_H_ */
+#endif /* end of include guard: WOOPS_UTIL_LOGGING_H_ */

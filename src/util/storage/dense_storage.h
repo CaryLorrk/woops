@@ -1,5 +1,5 @@
-#ifndef WOOPS_COMMON_STROAGE_DENSE_STORAGE_H_
-#define WOOPS_COMMON_STROAGE_DENSE_STORAGE_H_
+#ifndef WOOPS_UTIL_STROAGE_DENSE_STORAGE_H_
+#define WOOPS_UTIL_STROAGE_DENSE_STORAGE_H_
 
 #include <cstring>
 #include <sstream>
@@ -84,4 +84,4 @@ std::string DenseStorage<T>::ToString() const {
     
 } /* woops */ 
 
-#endif /* end of include guard: WOOPS_COMMON_STROAGE_DENSE_STORAGE_H_ */
+#endif /* end of include guard: WOOPS_UTIL_STROAGE_DENSE_STORAGE_H_ */

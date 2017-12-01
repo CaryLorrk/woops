@@ -4,8 +4,8 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-#include "common/storage/dense_storage.h"
-#include "common/logging.h"
+#include "util/storage/dense_storage.h"
+#include "util/logging.h"
 
 namespace woops
 {
@@ -42,7 +42,6 @@ grpc::Status PsServiceServer::Assign(grpc::ServerContext* ctx,
         res->set_param(storage->Serialize(), storage->GetSize());
     }
     return grpc::Status::OK;
-
 }
 
 grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,

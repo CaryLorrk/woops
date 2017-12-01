@@ -1,13 +1,13 @@
-#ifndef WOOPS_CLIENT_WOOPS_CONFIG_H_
-#define WOOPS_CLIENT_WOOPS_CONFIG_H_
+#ifndef WOOPS_UTIL_CONFIG_WOOPS_CONFIG_H_
+#define WOOPS_UTIL_CONFIG_WOOPS_CONFIG_H_
 
 #include <algorithm>
 #include <vector>
 #include <string>
 #include <iostream>
 
-#include "common/protobuf/woops_config.pb.h"
-#include "common/logging.h"
+#include "util/protobuf/woops_config.pb.h"
+#include "util/logging.h"
 
 namespace woops
 {
@@ -45,4 +45,4 @@ struct WoopsConfig {
 } /* woops */ 
 
 
-#endif /* end of include guard: WOOPS_CLIENT_WOOPS_CONFIG_H_ */
+#endif /* end of include guard: WOOPS_UTIL_CONFIG_WOOPS_CONFIG_H_ */

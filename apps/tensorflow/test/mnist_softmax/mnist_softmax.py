@@ -49,7 +49,7 @@ def main(_):
                      run_metadata=run_metadata)
             tl = timeline.Timeline(run_metadata.step_stats)
             ctf = tl.generate_chrome_trace_format()
-            with open('timeline-%d.json' % (i), 'w') as f:
+            with open('/tmp/timeline-%d.json' % (i), 'w') as f:
                 f.write(ctf)
             print(sess.run(accuracy, feed_dict={x: mnist.test.images,
                                         y_: mnist.test.labels}))

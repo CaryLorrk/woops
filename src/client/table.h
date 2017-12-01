@@ -7,9 +7,9 @@
 
 #include <grpc++/grpc++.h>
 
-#include "common/storage/storage.h"
-#include "common/protobuf/ps_service.pb.h"
-#include "table_config.h"
+#include "util/storage/storage.h"
+#include "util/protobuf/ps_service.pb.h"
+#include "util/config/table_config.h"
 
 namespace woops
 {

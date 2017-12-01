@@ -2,124 +2,20 @@
 
 #include <algorithm>
 
-#include "common/protobuf/ps_service.grpc.pb.h"
-#include "common/logging.h"
+#include "util/logging.h"
+#include "util/comm/comm.h"
 
 namespace woops
 { 
 
-Client::~Client() {
-    LOG(INFO) << "Clean up.";
-    for (auto& s: pull_streams_) {
-        s->WritesDone();
-    }
-    for (auto& s: push_streams_) {
-        s->WritesDone();
-    }
-    server_->Shutdown();
-    for (auto& s: pull_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    for (auto& s: push_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    server_thread_.join();
-    for (auto& t: client_threads_) {
-        t.join();
-    }
-}
 
-Client& Client::GetInstance() {
-    static Client singleton;
-    return singleton;
-}
+void Client::Initialize(const WoopsConfig& config, Comm* comm) {
+    comm_ = comm;
 
-void Client::server_thread_func_() {
-    server_->Wait();
-}
-
-void Client::client_thread_func_(int server) {
-    rpc::PullResponse res;
-    while (pull_streams_[server]->Read(&res)) {
-        auto& table = tables_[res.name()];
-        int start = server ? table->host_ends[server-1] : 0;
-        int end = table->host_ends[server];
-        {
-            std::lock_guard<std::mutex> lock(table->mu);
-            table->cache->Assign(res.param().data(), start, end - start);
-            if (table->iterations[server] < res.iteration()) {
-                table->iterations[server] = res.iteration();
-            }
-        }
-        table->cv.notify_all();
-    }
-}
-
-using namespace std::chrono_literals;
-void Client::Initialize(const WoopsConfig& config) {
     this_host_ = config.this_host;
     staleness_ = config.staleness;
     port_ = config.port;
     hosts_ = config.hosts;
-
-    /* server */
-    grpc::ServerBuilder builder;
-    builder.SetMaxMessageSize(100*1024*1024);
-    builder.AddListeningPort("0.0.0.0:"+port_, grpc::InsecureServerCredentials());
-    service_ = std::make_unique<PsServiceServer>(this_host_, hosts_.size(), staleness_);
-    builder.RegisterService(service_.get());
-    server_ = builder.BuildAndStart();
-    server_thread_ = std::thread(&Client::server_thread_func_, this);
-    std::this_thread::sleep_for(100ms);
-
-    /* stubs */
-    LOG(INFO) << "Check servers:";
-    grpc::ChannelArguments channel_args;
-    channel_args.SetInt("grpc.max_message_length", 100*1024*1024);
-    for (auto& host: hosts_) {
-        while(1) {
-            auto stub = rpc::PsService::NewStub(grpc::CreateCustomChannel(
-                            host+":"+port_,
-                            grpc::InsecureChannelCredentials(),
-                            channel_args));
-            grpc::ClientContext ctx;
-            rpc::CheckAliveRequest req;
-            rpc::CheckAliveResponse res;
-            stub->CheckAlive(&ctx, req, &res);
-            if (res.status()) {
-                LOG(INFO) << host << " is up.";
-                stubs_.push_back(std::move(stub));
-                break;
-            } else {
-                LOG(WARNING) << "Failed to connect to " << host <<".";
-                std::this_thread::sleep_for(1s);
-            }
-        }
-    }
-
-    /* Client */
-    push_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
-    pull_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
-    for (size_t server = 0; server < hosts_.size(); server++) {
-        auto push_ctx = std::make_unique<grpc::ClientContext>();
-        push_ctx->AddMetadata("client", std::to_string(this_host_));
-        push_streams_.push_back(stubs_[server]->Update(push_ctx.get()));
-        push_ctxs_.push_back(std::move(push_ctx));
-
-        auto pull_ctx = std::make_unique<grpc::ClientContext>();
-        pull_ctx->AddMetadata("client", std::to_string(this_host_));
-        pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
-        pull_ctxs_.push_back(std::move(pull_ctx));
-
-        client_threads_.emplace_back(&Client::client_thread_func_, this, server);
-    }
-    std::this_thread::sleep_for(100ms);
 }
 
 void Client::CreateTable(const TableConfig& config) {
@@ -144,13 +40,27 @@ void Client::CreateTable(const TableConfig& config) {
 
 
     table->iterations.resize(hosts_.size(), -1);
-    service_->CreateTable(config, end - start);
+    comm_->CreateTable(config, end - start);
 }
 
 
 void Client::LocalAssign(const std::string& name, const void* data) {
     auto& table = tables_[name];
     table->cache->Assign(data);
+}
+
+void Client::ServerAssign(int server, const std::string& tablename, const void* data, int iteration) {
+    auto& table = tables_[tablename];
+    int start = server ? table->host_ends[server-1] : 0;
+    int end = table->host_ends[server];
+    {
+        std::lock_guard<std::mutex> lock(table->mu);
+        table->cache->Assign(data, start, end - start);
+        if (table->iterations[server] < iteration) {
+            table->iterations[server] = iteration;
+        }
+    }
+    table->cv.notify_all();
 }
 
 void Client::Update(const std::string& name, const void* data) {
@@ -163,16 +73,7 @@ void Client::Update(const std::string& name, const void* data) {
         size_t offset = start * table->element_size;
         int8_t* offset_data = (int8_t*)data + offset;
 
-        if (server == this_host_) {
-            service_->LocalUpdate(name, offset_data, iteration_);
-        } else {
-            rpc::UpdateRequest req;
-            req.set_name(name);
-            req.set_iteration(iteration_);
-            req.set_delta(offset_data, size);
-            std::lock_guard<std::mutex> lock(push_streams_mu_[server]);
-            push_streams_[server]->Write(req);
-        }
+        comm_->Update(server, name, offset_data, size, iteration_);
 
         start = end;
     }
@@ -188,12 +89,8 @@ void Client::Sync(const std::string& name) {
     int min = *std::min_element(
             table->iterations.begin(), table->iterations.end());
     if (min < iteration_ - staleness_ - 1) {
-        rpc::PullRequest req;
-        req.set_name(name);
-        req.set_iteration(iteration_);
         for (size_t server = 0; server < hosts_.size(); ++server) {
-            std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
-            pull_streams_[server]->Write(req);
+            comm_->Sync(server, name, iteration_);
         }
 
         table->cv.wait(lock, [this, &name, &table]{
@@ -214,22 +111,15 @@ void Client::ForceSync() {
         for (size_t server = 0; server < hosts_.size(); ++server) {
             int end = ends[server];
             auto data = table->cache->Serialize();
-
-            rpc::AssignRequest req;
-            req.set_client(this_host_);
-            req.set_name(name);
+            const void *offset_data;
+            size_t size;
             if (this_host_ == 0) {
+                size = (end - start) * table->element_size;
                 size_t offset = start * table->element_size;
-                size_t size = (end - start) * table->element_size;
-                req.set_param((int8_t*)data + offset, size);
+                offset_data = static_cast<const int8_t*>(data) + offset;
             }
+            comm_->ForceSync(server, name, offset_data, size);
 
-            grpc::ClientContext ctx;
-            rpc::AssignResponse res;
-            stubs_[server]->Assign(&ctx, req, &res);
-            if (this_host_ != 0) {
-                table->cache->Assign(res.param().data(), start, end - start);
-            }
             start = end;
         }
     }
@@ -241,9 +131,10 @@ std::string Client::ToString() {
     for (auto& pair: tables_) {
         ss << pair.first << ": " << pair.second->cache->ToString() << std::endl;
     }
-    ss << "Server: " << std::endl;
-    ss << service_->ToString();
     return ss.str();
 }
+
+Client::Client():
+    iteration_(0){}
 
 } /* woops */ 

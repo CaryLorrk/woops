@@ -1,5 +1,5 @@
-#ifndef WOOPS_COMMON_STORAGE_STORAGE_H_
-#define WOOPS_COMMON_STORAGE_STORAGE_H_
+#ifndef WOOPS_UTIL_STORAGE_STORAGE_H_
+#define WOOPS_UTIL_STORAGE_STORAGE_H_
 
 #include <string>
 
@@ -20,4 +20,4 @@ public:
     
 } /* woops */ 
 
-#endif /* end of include guard: WOOPS_COMMON_STORAGE_STORAGE_H_ */
+#endif /* end of include guard: WOOPS_UTIL_STORAGE_STORAGE_H_ */

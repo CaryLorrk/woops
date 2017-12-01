@@ -1,11 +1,11 @@
-#ifndef WOOPS_CLIENT_TABLE_CONFIG_H_
-#define WOOPS_CLIENT_TABLE_CONFIG_H_
+#ifndef WOOPS_CLIENT_CONFIG_TABLE_CONFIG_H_
+#define WOOPS_CLIENT_CONFIG_TABLE_CONFIG_H_
 
 #include <string>
 #include <memory>
 #include <functional>
 
-#include "common/storage/storage.h"
+#include "util/storage/storage.h"
 
 namespace woops
 {
@@ -22,4 +22,4 @@ struct TableConfig {
 
 } /* woops */ 
 
-#endif /* end of include guard: WOOPS_CLIENT_TABLE_CONFIG_H_ */
+#endif /* end of include guard: WOOPS_CONFIG_TABLE_CONFIG_H_ */
