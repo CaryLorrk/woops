@@ -3,20 +3,23 @@
 #include "util/logging.h"
 #include "util/protobuf/ps_service.grpc.pb.h"
 
+#include "server/server.h"
 #include "client/client.h"
 #include "server/ps_service_server.h"
 
 namespace woops
 {
+Comm::Comm():
+    barrier_cnt_(0) {}
 
 void Comm::CreateTable(const TableConfig& config, size_t size) {
-    service_->CreateTable(config, size);
+    server_->CreateTable(config, size);
 }
 
 void Comm::Update(int server, const std::string& tablename, const void* data,
         size_t size, int iteration) {
     if (server == this_host_) {
-        service_->LocalUpdate(tablename, data, iteration);
+        server_->LocalUpdate(tablename, data, iteration);
     } else {
         rpc::UpdateRequest req;
         req.set_name(tablename);
@@ -35,51 +38,19 @@ void Comm::Sync(int server, const std::string& tablename, int iteration) {
     pull_streams_[server]->Write(req);
 }
 
-void Comm::ForceSync(int server, const std::string tablename, const void* data, size_t size) {
+void Comm::Assign(int host, const std::string tablename, const void* data, size_t size) {
     rpc::AssignRequest req;
-    req.set_client(this_host_);
-    req.set_name(tablename);
-    if (this_host_ == 0) {
-        req.set_param(data, size);
-    }
+    req.set_tablename(tablename);
+    req.set_parameter(data, size);
 
     grpc::ClientContext ctx;
     rpc::AssignResponse res;
-    stubs_[server]->Assign(&ctx, req, &res);
-    if (this_host_ != 0) {
-        client_->ServerAssign(server, tablename, res.param().data(), 0);
-    }
+    stubs_[host]->Assign(&ctx, req, &res);
 }
 
-Comm::~Comm() {
-    LOG(INFO) << "Clean up.";
-    for (auto& s: pull_streams_) {
-        s->WritesDone();
-    }
-    for (auto& s: push_streams_) {
-        s->WritesDone();
-    }
-    server_->Shutdown();
-    for (auto& s: pull_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    for (auto& s: push_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    server_thread_.join();
-    for (auto& t: client_threads_) {
-        t.join();
-    }
-}
 
 void Comm::server_thread_func_() {
-    server_->Wait();
+    rpc_server_->Wait();
 }
 
 void Comm::client_thread_func_(int server) {
@@ -90,21 +61,22 @@ void Comm::client_thread_func_(int server) {
 }
 
 using namespace std::chrono_literals;
-void Comm::Initialize(const WoopsConfig& config, Client* client) {
+void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server) {
     this_host_ = config.this_host;
     staleness_ = config.staleness;
     port_ = config.port;
     hosts_ = config.hosts;
 
     client_ = client;
+    server_ = server;
 
     /* server */
     grpc::ServerBuilder builder;
     builder.SetMaxMessageSize(100*1024*1024);
     builder.AddListeningPort("0.0.0.0:"+port_, grpc::InsecureServerCredentials());
-    service_ = std::make_unique<PsServiceServer>(this_host_, hosts_.size(), staleness_);
+    service_ = std::make_unique<PsServiceServer>(this, client_, server_);
     builder.RegisterService(service_.get());
-    server_ = builder.BuildAndStart();
+    rpc_server_ = builder.BuildAndStart();
     server_thread_ = std::thread(&Comm::server_thread_func_, this);
     std::this_thread::sleep_for(100ms);
 
@@ -151,5 +123,59 @@ void Comm::Initialize(const WoopsConfig& config, Client* client) {
     }
     std::this_thread::sleep_for(100ms);
 }
+
+// Barrier
+void Comm::Barrier() {
+    grpc::ClientContext ctx;
+    rpc::BarrierNotifyRequest req;
+    rpc::BarrierNotifyResponse res;
+    std::unique_lock<std::mutex> lock(barrier_mu_);
+    if (this_host_ == 0) {
+        barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= hosts_.size() - 1;});
+        barrier_cnt_ = 0;
+
+        for (size_t host = 1; host < hosts_.size(); ++host) {
+            stubs_[host]->BarrierNotify(&ctx, req, &res);
+        }
+        return;
+    }    
+    stubs_[0]->BarrierNotify(&ctx, req, &res);
+    barrier_cv_.wait(lock);
+}
+
+void Comm::BarrierNotified() {
+    std::unique_lock<std::mutex> lock(barrier_mu_);
+    barrier_cnt_ += 1;
+    lock.unlock();
+    barrier_cv_.notify_all();
+}
+
+Comm::~Comm() {
+    LOG(INFO) << "Clean up.";
+    for (auto& s: pull_streams_) {
+        s->WritesDone();
+    }
+    for (auto& s: push_streams_) {
+        s->WritesDone();
+    }
+    rpc_server_->Shutdown();
+    for (auto& s: pull_streams_) {
+        auto status = s->Finish();
+        if (!status.ok()) {
+            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
+        }
+    }
+    for (auto& s: push_streams_) {
+        auto status = s->Finish();
+        if (!status.ok()) {
+            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
+        }
+    }
+    server_thread_.join();
+    for (auto& t: client_threads_) {
+        t.join();
+    }
+}
+
 
 } /* woops */ 

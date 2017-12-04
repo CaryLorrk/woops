@@ -103,26 +103,27 @@ void Client::Sync(const std::string& name) {
 
 void Client::ForceSync() {
     LOG(INFO) << "ForceSync";
-    for (auto& pair: tables_) {
-        auto& name = pair.first;
-        auto& table = pair.second;
-        auto& ends = table->host_ends;
-        int start = 0;
-        for (size_t server = 0; server < hosts_.size(); ++server) {
-            int end = ends[server];
-            auto data = table->cache->Serialize();
-            const void *offset_data;
-            size_t size;
-            if (this_host_ == 0) {
+    if (this_host_ == 0) {
+        for (auto& pair: tables_) {
+            auto& name = pair.first;
+            auto& table = pair.second;
+            auto& ends = table->host_ends;
+            int start = 0;
+            for (size_t host = 0; host < hosts_.size(); ++host) {
+                int end = ends[host];
+                auto data = table->cache->Serialize();
+                const void *offset_data;
+                size_t size;
                 size = (end - start) * table->element_size;
                 size_t offset = start * table->element_size;
                 offset_data = static_cast<const int8_t*>(data) + offset;
-            }
-            comm_->ForceSync(server, name, offset_data, size);
+                comm_->Assign(host, name, offset_data, size);
 
-            start = end;
+                start = end;
+            }
         }
     }
+    comm_->Barrier();
 }
 
 std::string Client::ToString() {

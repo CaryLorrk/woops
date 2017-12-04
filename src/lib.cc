@@ -21,8 +21,9 @@ void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.config_ = config;
 
-    lib.comm_.Initialize(config, &lib.client_);
+    lib.comm_.Initialize(config, &lib.client_, &lib.server_);
     lib.client_.Initialize(config, &lib.comm_);
+    lib.server_.Initialize(config, &lib.comm_);
 }
 
 void Lib::InitializeFromFile(const std::string& filename) {

@@ -6,6 +6,7 @@
 #include "util/config/woops_config.h"
 #include "util/comm/comm.h"
 #include "client/client.h"
+#include "server/server.h"
 #include "server/ps_service_server.h"
 
 namespace woops
@@ -28,6 +29,7 @@ private:
     WoopsConfig config_;
     Comm comm_;
     Client client_;
+    Server server_;
     static Lib& Get();
     
 };

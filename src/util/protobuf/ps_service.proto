@@ -3,13 +3,13 @@ package woops.rpc;
 
 service PsService {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
+    rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
     rpc Assign(AssignRequest) returns (AssignResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
 }
 
 message CheckAliveRequest {
-
 }
 
 message CheckAliveResponse {
@@ -17,13 +17,11 @@ message CheckAliveResponse {
 }
 
 message AssignRequest {
-    int32 client = 1;
-    string name = 2;
-    bytes param = 3;
+    string tablename = 1;
+    bytes parameter = 2;
 }
 
 message AssignResponse {
-    bytes param = 1;
 }
 
 message UpdateRequest {
@@ -44,4 +42,12 @@ message PullResponse {
     string name = 1;
     int32 iteration = 2;
     bytes param = 3;
+}
+
+message BarrierNotifyRequest {
+    
+}
+
+message BarrierNotifyResponse {
+
 }

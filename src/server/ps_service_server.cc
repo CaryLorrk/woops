@@ -6,16 +6,16 @@
 #include <thread>
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
+#include "util/comm/comm.h"
+#include "server/server.h"
+#include "client/client.h"
 
 namespace woops
 {
-PsServiceServer::PsServiceServer(int this_host, size_t num_hosts, int staleness):
-    this_host_(this_host),
-    num_hosts_(num_hosts),
-    staleness_(staleness)
-{
-        
-}
+PsServiceServer::PsServiceServer(Comm *comm, Client *client, Server *server):
+    comm_(comm),
+    client_(client),
+    server_(server) {}
 
 grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
         const rpc::CheckAliveRequest* req,
@@ -24,23 +24,18 @@ grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
     return grpc::Status::OK;
 }
 
+grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,
+        const rpc::BarrierNotifyRequest* req,
+        rpc::BarrierNotifyResponse* res){
+    comm_->BarrierNotified();
+    return grpc::Status::OK;
+}
+
 grpc::Status PsServiceServer::Assign(grpc::ServerContext* ctx,
         const rpc::AssignRequest* req, rpc::AssignResponse* res) {
-    auto& table = GetTable(req->name());
-    auto& storage = table->storage;
-    if (req->client() == 0) {
-        storage->Assign(req->param().data());
-    }
-    
-    std::unique_lock<std::mutex> lock(table->mu);
-    table->assign_cnt++;
-    table->cv.notify_all();
-    table->cv.wait(lock, [this, &table, req] {
-        return table->assign_cnt % num_hosts_ == 0;
-    });
-    if (req->client() != 0) {
-        res->set_param(storage->Serialize(), storage->GetSize());
-    }
+    const std::string &tablename = req->tablename();
+    const void *data = req->parameter().data();
+    server_->LocalAssign(tablename, data);
     return grpc::Status::OK;
 }
 
@@ -49,7 +44,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
     int client = std::stoi(ctx->client_metadata().find("client")->second.data());
     rpc::UpdateRequest req;
     while (stream->Read(&req)) {
-        auto& table = GetTable(req.name());
+        auto& table = server_->GetTable(req.name());
         auto& storage = table->storage;
         std::unique_lock<std::mutex> lock(table->mu); 
         storage->Update(req.delta().data());
@@ -58,7 +53,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
             iteration = req.iteration();
         }
         int min = *std::min_element(table->iterations.begin(), table->iterations.end());
-        if (min >= iteration - staleness_) {
+        if (min >= iteration - server_->staleness_) {
             table->cv.notify_all();
         }
     }
@@ -72,7 +67,7 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
     std::mutex stream_mu;
     while(stream->Read(&req)) {
         std::thread t([this, req, &stream_mu, &stream, client] {
-            auto& table = GetTable(req.name());
+            auto& table = server_->GetTable(req.name());
             auto& name = req.name();
             auto& storage = table->storage;
             int min;
@@ -81,7 +76,7 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
                 auto iteration = req.iteration();
                 table->cv.wait(lock, [this, &table, iteration, &min]{
                     min = *std::min_element(table->iterations.begin(), table->iterations.end());
-                    return min >= iteration - staleness_ - 1;
+                    return min >= iteration - server_->staleness_ - 1;
                 });
             }
             rpc::PullResponse res;
@@ -99,58 +94,6 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
     return grpc::Status::OK;
 }
 
-std::unique_ptr<ServerTable>& PsServiceServer::GetTable(const std::string& name) {
-    std::unique_lock<std::mutex> lock(tables_mu_);
-    decltype(tables_.begin()) search;
-    tables_cv_.wait(lock, [this, &name, &search] {
-        search = tables_.find(name);
-        if (search == tables_.end()) return false;
-        return true;
-    });
-    return search->second;
-    
-}
 
-void PsServiceServer::LocalAssign(const std::string& name, const void* data) {
-    auto& table = GetTable(name);
-    std::lock_guard<std::mutex> lock(table->mu);
-    table->storage->Assign(data);
-}
-
-void PsServiceServer::LocalUpdate(const std::string& name, const void* delta, int iteration) {
-    auto& table = GetTable(name);
-    std::lock_guard<std::mutex> lock(table->mu);
-    table->storage->Update(delta);
-    table->iterations[this_host_] = iteration;
-    int min = *std::min_element(table->iterations.begin(), table->iterations.end());
-    if (min >= iteration - staleness_) {
-        table->cv.notify_all();
-    }
-}
-
-void PsServiceServer::CreateTable(const TableConfig& config, size_t size) {
-    {
-        std::lock_guard<std::mutex> lock(tables_mu_);
-        auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
-        auto& table = pair.first->second;
-
-        table->storage = config.server_storage_constructor(size);
-        table->storage->Zerofy();
-        table->size = size;
-        table->element_size = config.element_size;
-        table->assign_cnt = 0;
-
-        table->iterations.resize(num_hosts_, -1);
-    }
-    tables_cv_.notify_all();
-}
-
-std::string PsServiceServer::ToString() {
-    std::stringstream ss;
-    for(auto& i: tables_) {
-        ss << i.first << ": " << i.second->storage->ToString() << std::endl; 
-    }
-    return ss.str();
-}
     
 } /* woops */ 
