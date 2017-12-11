@@ -14,16 +14,16 @@ class PsServiceServer;
 class Server
 {
 public:
-    void Assign(int client, const std::string& tablename, const void* data);
-    void LocalAssign(const std::string& name, const void* data);
-    void LocalUpdate(const std::string& name, const void* delta, int iteration);
+    void Assign(const std::string& tablename, const void* data);
+    void Update(int client, const std::string& tablename, const void* delta, int iteration);
     void CreateTable(const TableConfig& config, size_t size);
+    const void* GetParameter(int client, const std::string& tablename, int &iteration, size_t &size);
     std::string ToString();
 
-    void Initialize(const WoopsConfig& config, Comm *comm);
+    void Initialize(const WoopsConfig& config, Comm* comm);
 
 private:
-    Comm *comm_;
+    Comm* comm_;
 
     int this_host_;
     size_t num_hosts_;
@@ -31,8 +31,6 @@ private:
     std::map<std::string, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
     std::condition_variable tables_cv_;
-
-    std::unique_ptr<ServerTable>& GetTable(const std::string& name); 
 friend class PsServiceServer;
 }; 
 } /* woops */ 

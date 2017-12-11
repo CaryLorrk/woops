@@ -19,7 +19,7 @@ void Client::Initialize(const WoopsConfig& config, Comm* comm) {
 }
 
 void Client::CreateTable(const TableConfig& config) {
-    auto pair = tables_.emplace(config.name, std::make_unique<Table>());
+    auto pair = tables_.emplace(config.name, std::make_unique<ClientTable>());
     auto& table = pair.first->second;
     table->size = config.size;
     table->element_size = config.element_size;
@@ -41,6 +41,7 @@ void Client::CreateTable(const TableConfig& config) {
 
     table->iterations.resize(hosts_.size(), -1);
     comm_->CreateTable(config, end - start);
+    comm_->Barrier();
 }
 
 
@@ -90,7 +91,7 @@ void Client::Sync(const std::string& name) {
             table->iterations.begin(), table->iterations.end());
     if (min < iteration_ - staleness_ - 1) {
         for (size_t server = 0; server < hosts_.size(); ++server) {
-            comm_->Sync(server, name, iteration_);
+            comm_->Sync(server, name, iteration_ - 1);
         }
 
         table->cv.wait(lock, [this, &name, &table]{
@@ -105,7 +106,7 @@ void Client::ForceSync() {
     LOG(INFO) << "ForceSync";
     if (this_host_ == 0) {
         for (auto& pair: tables_) {
-            auto& name = pair.first;
+            const std::string &tablename = pair.first;
             auto& table = pair.second;
             auto& ends = table->host_ends;
             int start = 0;
@@ -117,7 +118,7 @@ void Client::ForceSync() {
                 size = (end - start) * table->element_size;
                 size_t offset = start * table->element_size;
                 offset_data = static_cast<const int8_t*>(data) + offset;
-                comm_->Assign(host, name, offset_data, size);
+                comm_->ForceSync(host, tablename, offset_data, size);
 
                 start = end;
             }

@@ -5,7 +5,7 @@
 namespace woops
 {
 
-void Server::Initialize(const WoopsConfig& config, Comm *comm) {
+void Server::Initialize(const WoopsConfig& config, Comm* comm) {
     comm_ = comm;
 
     this_host_ = config.this_host;
@@ -27,36 +27,40 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
 
         table->iterations.resize(num_hosts_, -1);
     }
-    tables_cv_.notify_all();
+    tables_cv_.notify_one();
 }
 
-void Server::LocalAssign(const std::string& name, const void* data) {
-    auto& table = GetTable(name);
+void Server::Assign(const std::string& tablename, const void* data) {
+    auto& table = tables_[tablename];
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Assign(data);
 }
 
-void Server::LocalUpdate(const std::string& name, const void* delta, int iteration) {
-    auto& table = GetTable(name);
+void Server::Update(int client, const std::string& tablename, const void* delta, int iteration) {
+    auto& table = tables_[tablename];
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Update(delta);
-    table->iterations[this_host_] = iteration;
+    if (table->iterations[client] < iteration) {
+        table->iterations[client] = iteration;
+    }
     int min = *std::min_element(table->iterations.begin(), table->iterations.end());
     if (min >= iteration - staleness_) {
         table->cv.notify_all();
     }
 }
 
-std::unique_ptr<ServerTable>& Server::GetTable(const std::string& name) {
-    std::unique_lock<std::mutex> lock(tables_mu_);
-    decltype(tables_.begin()) search;
-    tables_cv_.wait(lock, [this, &name, &search] {
-        search = tables_.find(name);
-        if (search == tables_.end()) return false;
-        return true;
+const void* Server::GetParameter(int client, const std::string& tablename, int &iteration, size_t &size) {
+    auto& table = tables_[tablename];
+    auto& storage = table->storage;
+    int min;
+    std::unique_lock<std::mutex> lock(table->mu); 
+    table->cv.wait(lock, [this, &table, iteration, &min]{
+        min = *std::min_element(table->iterations.begin(), table->iterations.end());
+        return min >= iteration - staleness_;
     });
-    return search->second;
-    
+    iteration = min;
+    size = storage->GetSize();
+    return storage->Serialize();
 }
 
 std::string Server::ToString() {

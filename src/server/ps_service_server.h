@@ -15,7 +15,7 @@ class Server;
 class PsServiceServer final: public rpc::PsService::Service
 {
 public:
-    PsServiceServer(Comm *comm, Client *client, Server *server);
+    PsServiceServer(Comm* comm, Client* client, Server* server);
 
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
             const rpc::CheckAliveRequest* req, rpc::CheckAliveResponse* res) override;
@@ -23,8 +23,8 @@ public:
     grpc::Status BarrierNotify(grpc::ServerContext* ctx,
             const rpc::BarrierNotifyRequest* req, rpc::BarrierNotifyResponse* res) override;
 
-    grpc::Status Assign(grpc::ServerContext* ctx,
-            const rpc::AssignRequest* req, rpc::AssignResponse* res) override;
+    grpc::Status ForceSync(grpc::ServerContext* ctx,
+            const rpc::ForceSyncRequest* req, rpc::ForceSyncResponse* res) override;
 
     grpc::Status Update(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;
@@ -33,9 +33,9 @@ public:
             grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
 
 private:
-    Comm *comm_;
-    Client *client_;
-    Server *server_;
+    Comm* comm_;
+    Client* client_;
+    Server* server_;
 };
 } /* woops */ 
 

@@ -27,9 +27,9 @@ public:
 
 private:
     WoopsConfig config_;
-    Comm comm_;
     Client client_;
     Server server_;
+    Comm comm_;
     static Lib& Get();
     
 };

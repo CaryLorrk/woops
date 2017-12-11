@@ -19,10 +19,10 @@ void Comm::CreateTable(const TableConfig& config, size_t size) {
 void Comm::Update(int server, const std::string& tablename, const void* data,
         size_t size, int iteration) {
     if (server == this_host_) {
-        server_->LocalUpdate(tablename, data, iteration);
+        server_->Update(this_host_, tablename, data, iteration);
     } else {
         rpc::UpdateRequest req;
-        req.set_name(tablename);
+        req.set_tablename(tablename);
         req.set_iteration(iteration);
         req.set_delta(data, size);
         std::lock_guard<std::mutex> lock(push_streams_mu_[server]);
@@ -32,20 +32,20 @@ void Comm::Update(int server, const std::string& tablename, const void* data,
 
 void Comm::Sync(int server, const std::string& tablename, int iteration) {
     rpc::PullRequest req;
-    req.set_name(tablename);
+    req.set_tablename(tablename);
     req.set_iteration(iteration);
     std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
     pull_streams_[server]->Write(req);
 }
 
-void Comm::Assign(int host, const std::string tablename, const void* data, size_t size) {
-    rpc::AssignRequest req;
+void Comm::ForceSync(int host, const std::string tablename, const void* data, size_t size) {
+    rpc::ForceSyncRequest req;
     req.set_tablename(tablename);
     req.set_parameter(data, size);
 
     grpc::ClientContext ctx;
-    rpc::AssignResponse res;
-    stubs_[host]->Assign(&ctx, req, &res);
+    rpc::ForceSyncResponse res;
+    stubs_[host]->ForceSync(&ctx, req, &res);
 }
 
 
@@ -56,7 +56,7 @@ void Comm::server_thread_func_() {
 void Comm::client_thread_func_(int server) {
     rpc::PullResponse res;
     while (pull_streams_[server]->Read(&res)) {
-        client_->ServerAssign(server, res.name(), res.param().data(), res.iteration());
+        client_->ServerAssign(server, res.tablename(), res.parameter().data(), res.iteration());
     }
 }
 
@@ -144,9 +144,10 @@ void Comm::Barrier() {
 }
 
 void Comm::BarrierNotified() {
-    std::unique_lock<std::mutex> lock(barrier_mu_);
-    barrier_cnt_ += 1;
-    lock.unlock();
+    {
+        std::lock_guard<std::mutex> lock(barrier_mu_);
+        barrier_cnt_ += 1;
+    }
     barrier_cv_.notify_all();
 }
 

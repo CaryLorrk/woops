@@ -4,28 +4,31 @@ package woops.rpc;
 service PsService {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
     rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
-    rpc Assign(AssignRequest) returns (AssignResponse) {}
+    rpc ForceSync(ForceSyncRequest) returns (ForceSyncResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
 }
 
-message CheckAliveRequest {
-}
+message CheckAliveRequest {}
 
 message CheckAliveResponse {
     bool status = 1; 
 }
 
-message AssignRequest {
+message BarrierNotifyRequest {}
+
+message BarrierNotifyResponse {}
+
+message ForceSyncRequest {
     string tablename = 1;
     bytes parameter = 2;
 }
 
-message AssignResponse {
+message ForceSyncResponse {
 }
 
 message UpdateRequest {
-    string name = 1;
+    string tablename = 1;
     int32 iteration = 2;
     bytes delta = 3;
 }
@@ -34,20 +37,13 @@ message UpdateResponse {
 }
 
 message PullRequest {
-    string name = 1;
+    string tablename = 1;
     int32 iteration = 2;
 }
 
 message PullResponse {
-    string name = 1;
+    string tablename = 1;
     int32 iteration = 2;
-    bytes param = 3;
+    bytes parameter = 3;
 }
 
-message BarrierNotifyRequest {
-    
-}
-
-message BarrierNotifyResponse {
-
-}

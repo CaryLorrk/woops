@@ -27,7 +27,7 @@ public:
     void Update(int server, const std::string& tablename,
             const void* data, size_t size, int iteration);
     void Sync(int server, const std::string& tablename, int iteration);
-    void Assign(int host, const std::string tablename, const void* data, size_t size);
+    void ForceSync(int host, const std::string tablename, const void* data, size_t size);
 
     void Barrier();
 

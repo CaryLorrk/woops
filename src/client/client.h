@@ -12,7 +12,7 @@
 
 #include "util/config/woops_config.h"
 #include "util/config/table_config.h"
-#include "table.h"
+#include "client_table.h"
 
 
 namespace woops
@@ -42,8 +42,7 @@ private:
     std::string port_;
     std::vector<std::string> hosts_;
 
-
-    std::map<std::string, std::unique_ptr<Table>> tables_;
+    std::map<std::string, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
 }; /* woops */ 
 }
