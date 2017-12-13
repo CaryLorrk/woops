@@ -25,17 +25,26 @@ void Comm::Update(int server, const std::string& tablename, const void* data,
         req.set_tablename(tablename);
         req.set_iteration(iteration);
         req.set_delta(data, size);
-        std::lock_guard<std::mutex> lock(push_streams_mu_[server]);
-        push_streams_[server]->Write(req);
+        std::lock_guard<std::mutex> lock(update_streams_mu_[server]);
+        update_streams_[server]->Write(req);
     }
 }
 
-void Comm::Sync(int server, const std::string& tablename, int iteration) {
+void Comm::Pull(int server, const std::string& tablename, int iteration) {
     rpc::PullRequest req;
     req.set_tablename(tablename);
     req.set_iteration(iteration);
     std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
     pull_streams_[server]->Write(req);
+}
+
+void Comm::Push(int client, const std::string& tablename, const void* data, size_t size, int iteration) {
+    rpc::PushRequest req;
+    req.set_tablename(tablename);
+    req.set_parameter(data, size);
+    req.set_iteration(iteration);
+    std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
+    push_streams_[client]->Write(req);
 }
 
 void Comm::ForceSync(int host, const std::string tablename, const void* data, size_t size) {
@@ -51,13 +60,6 @@ void Comm::ForceSync(int host, const std::string tablename, const void* data, si
 
 void Comm::server_thread_func_() {
     rpc_server_->Wait();
-}
-
-void Comm::client_thread_func_(int server) {
-    rpc::PullResponse res;
-    while (pull_streams_[server]->Read(&res)) {
-        client_->ServerAssign(server, res.tablename(), res.parameter().data(), res.iteration());
-    }
 }
 
 using namespace std::chrono_literals;
@@ -106,21 +108,26 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server)
     }
 
     /* Client */
-    push_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
+    update_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
     pull_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
+    push_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
     for (size_t server = 0; server < hosts_.size(); server++) {
-        auto push_ctx = std::make_unique<grpc::ClientContext>();
-        push_ctx->AddMetadata("client", std::to_string(this_host_));
-        push_streams_.push_back(stubs_[server]->Update(push_ctx.get()));
-        push_ctxs_.push_back(std::move(push_ctx));
-
+        auto update_ctx = std::make_unique<grpc::ClientContext>();
+        update_ctx->AddMetadata("from_host", std::to_string(this_host_));
+        update_streams_.push_back(stubs_[server]->Update(update_ctx.get()));
+        update_ctxs_.push_back(std::move(update_ctx));
+        
         auto pull_ctx = std::make_unique<grpc::ClientContext>();
-        pull_ctx->AddMetadata("client", std::to_string(this_host_));
+        pull_ctx->AddMetadata("from_host", std::to_string(this_host_));
         pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
         pull_ctxs_.push_back(std::move(pull_ctx));
 
-        client_threads_.emplace_back(&Comm::client_thread_func_, this, server);
+        auto push_ctx = std::make_unique<grpc::ClientContext>();
+        push_ctx->AddMetadata("from_host", std::to_string(this_host_));
+        push_streams_.push_back(stubs_[server]->Push(push_ctx.get()));
+        push_ctxs_.push_back(std::move(push_ctx));
     }
+
     std::this_thread::sleep_for(100ms);
 }
 
@@ -156,11 +163,20 @@ Comm::~Comm() {
     for (auto& s: pull_streams_) {
         s->WritesDone();
     }
+    for (auto& s: update_streams_) {
+        s->WritesDone();
+    }
     for (auto& s: push_streams_) {
         s->WritesDone();
     }
     rpc_server_->Shutdown();
     for (auto& s: pull_streams_) {
+        auto status = s->Finish();
+        if (!status.ok()) {
+            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
+        }
+    }
+    for (auto& s: update_streams_) {
         auto status = s->Finish();
         if (!status.ok()) {
             LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
@@ -173,9 +189,6 @@ Comm::~Comm() {
         }
     }
     server_thread_.join();
-    for (auto& t: client_threads_) {
-        t.join();
-    }
 }
 
 

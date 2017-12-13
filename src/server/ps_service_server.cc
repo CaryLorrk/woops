@@ -41,7 +41,7 @@ grpc::Status PsServiceServer::ForceSync(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) {
-    int client = std::stoi(ctx->client_metadata().find("client")->second.data());
+    int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::UpdateRequest req;
     while (stream->Read(&req)) {
         server_->Update(client, req.tablename(), req.delta().data(), req.iteration());        
@@ -51,7 +51,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) {
-    int client = std::stoi(ctx->client_metadata().find("client")->second.data());
+    int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PullRequest req;
     std::mutex stream_mu;
     while(stream->Read(&req)) {
@@ -59,18 +59,20 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
             const std::string& tablename = req.tablename();
             int iteration = req.iteration();
             size_t size;
-            const void* parameter = server_->GetParameter(client, tablename, iteration, size);
-            rpc::PullResponse res;
-            res.set_tablename(tablename);
-            res.set_iteration(iteration);
-            res.set_parameter(parameter, size);
-            {
-                std::lock_guard<std::mutex> lock(stream_mu);
-                stream->Write(res);
-            }
+            const void* parameter = server_->GetParameter(tablename, iteration, size);
+            comm_->Push(client, tablename, parameter, size, iteration);
         });
         t.detach();
         
+    }
+    return grpc::Status::OK;
+}
+grpc::Status PsServiceServer::Push(grpc::ServerContext* ctx,
+        grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) {
+    int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
+    rpc::PushRequest req;
+    while(stream->Read(&req)) {
+        client_->ServerAssign(server, req.tablename(), req.parameter().data(), req.iteration());
     }
     return grpc::Status::OK;
 }

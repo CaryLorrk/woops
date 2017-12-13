@@ -32,6 +32,9 @@ public:
     grpc::Status Pull(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
 
+    grpc::Status Push(grpc::ServerContext* ctx,
+            grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) override;
+
 private:
     Comm* comm_;
     Client* client_;

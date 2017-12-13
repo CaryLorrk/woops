@@ -7,6 +7,7 @@ service PsService {
     rpc ForceSync(ForceSyncRequest) returns (ForceSyncResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
+    rpc Push(stream PushRequest) returns (stream PushResponse) {}
 }
 
 message CheckAliveRequest {}
@@ -41,9 +42,13 @@ message PullRequest {
     int32 iteration = 2;
 }
 
-message PullResponse {
+message PullResponse {}
+
+message PushRequest {
     string tablename = 1;
     int32 iteration = 2;
     bytes parameter = 3;
 }
+
+message PushResponse {}
 

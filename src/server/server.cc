@@ -49,7 +49,8 @@ void Server::Update(int client, const std::string& tablename, const void* delta,
     }
 }
 
-const void* Server::GetParameter(int client, const std::string& tablename, int &iteration, size_t &size) {
+const void* Server::GetParameter(const std::string& tablename,
+        int& iteration, size_t& size) {
     auto& table = tables_[tablename];
     auto& storage = table->storage;
     int min;

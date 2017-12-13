@@ -10,6 +10,7 @@
 
 constexpr int SIZE = 3;
 constexpr int NUM_TABLE = 1;
+constexpr int MAX_ITER = 10;
 int main()
 {
     woops::InitializeFromFile("/root/config.in");
@@ -38,7 +39,7 @@ int main()
     }
     woops::ForceSync();
     std::fill(a, a+SIZE, 1);
-    for(int i = 0; i < 10000; ++i) {
+    for(int i = 0; i < MAX_ITER; ++i) {
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(std::to_string(j));

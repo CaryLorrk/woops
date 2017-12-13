@@ -8,7 +8,7 @@ cd tf_cnn_benchmarks
 python tf_cnn_benchmarks.py \
     --batch_size=64 \
     --model=resnet110 \
-    --num_batch=10000 \
+    --num_batch=1000 \
     --optimizer=sgd \
     --save_summaries_steps=100 \
     --save_model_secs=100 \

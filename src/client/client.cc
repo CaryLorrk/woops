@@ -91,7 +91,7 @@ void Client::Sync(const std::string& name) {
             table->iterations.begin(), table->iterations.end());
     if (min < iteration_ - staleness_ - 1) {
         for (size_t server = 0; server < hosts_.size(); ++server) {
-            comm_->Sync(server, name, iteration_ - 1);
+            comm_->Pull(server, name, iteration_ - 1);
         }
 
         table->cv.wait(lock, [this, &name, &table]{

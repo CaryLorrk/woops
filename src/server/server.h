@@ -17,7 +17,7 @@ public:
     void Assign(const std::string& tablename, const void* data);
     void Update(int client, const std::string& tablename, const void* delta, int iteration);
     void CreateTable(const TableConfig& config, size_t size);
-    const void* GetParameter(int client, const std::string& tablename, int &iteration, size_t &size);
+    const void* GetParameter(const std::string& tablename, int& iteration, size_t& size);
     std::string ToString();
 
     void Initialize(const WoopsConfig& config, Comm* comm);
