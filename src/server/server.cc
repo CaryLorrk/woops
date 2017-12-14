@@ -14,20 +14,16 @@ void Server::Initialize(const WoopsConfig& config, Comm* comm) {
 }
 
 void Server::CreateTable(const TableConfig& config, size_t size) {
-    {
-        std::lock_guard<std::mutex> lock(tables_mu_);
-        auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
-        auto& table = pair.first->second;
+    std::lock_guard<std::mutex> lock(tables_mu_);
+    auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
+    auto& table = pair.first->second;
 
-        table->storage = config.server_storage_constructor(size);
-        table->storage->Zerofy();
-        table->size = size;
-        table->element_size = config.element_size;
-        table->assign_cnt = 0;
+    table->storage = config.server_storage_constructor(size);
+    table->storage->Zerofy();
+    table->size = size;
+    table->element_size = config.element_size;
 
-        table->iterations.resize(num_hosts_, -1);
-    }
-    tables_cv_.notify_one();
+    table->iterations.resize(num_hosts_, -1);
 }
 
 void Server::Assign(const std::string& tablename, const void* data) {

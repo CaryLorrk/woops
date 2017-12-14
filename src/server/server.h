@@ -30,8 +30,6 @@ private:
     int staleness_;
     std::map<std::string, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
-    std::condition_variable tables_cv_;
-friend class PsServiceServer;
 }; 
 } /* woops */ 
 

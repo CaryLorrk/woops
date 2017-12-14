@@ -67,6 +67,7 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
     }
     return grpc::Status::OK;
 }
+
 grpc::Status PsServiceServer::Push(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) {
     int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());

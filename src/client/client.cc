@@ -75,6 +75,14 @@ void Client::Update(const std::string& name, const void* data) {
         int8_t* offset_data = (int8_t*)data + offset;
 
         comm_->Update(server, name, offset_data, size, iteration_);
+        int min = *std::min_element(
+                table->iterations.begin(), table->iterations.end());
+        if (min < iteration_ - staleness_) {
+            for (size_t server = 0; server < hosts_.size(); ++server) {
+                comm_->Pull(server, name, iteration_);
+            }
+        }
+
 
         start = end;
     }
@@ -87,19 +95,11 @@ void Client::Clock() {
 void Client::Sync(const std::string& name) {
     auto& table = tables_[name];
     std::unique_lock<std::mutex> lock(table->mu);
-    int min = *std::min_element(
-            table->iterations.begin(), table->iterations.end());
-    if (min < iteration_ - staleness_ - 1) {
-        for (size_t server = 0; server < hosts_.size(); ++server) {
-            comm_->Pull(server, name, iteration_ - 1);
-        }
-
-        table->cv.wait(lock, [this, &name, &table]{
+    table->cv.wait(lock, [this, &name, &table]{
             int min = *std::min_element(
                     table->iterations.begin(), table->iterations.end());
             return min >= iteration_ - staleness_ - 1;
-        });
-    }
+    });
 }
 
 void Client::ForceSync() {

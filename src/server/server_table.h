@@ -18,9 +18,6 @@ struct ServerTable {
     std::vector<int> iterations;
     std::mutex mu;
     std::condition_variable cv;
-
-
-    unsigned assign_cnt;
 }; 
 } /* woops */ 
 

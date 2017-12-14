@@ -3,6 +3,7 @@ package woops.rpc;
 
 service PsService {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
+    rpc Finish(FinishRequest) returns (FinishResponse) {}
     rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
     rpc ForceSync(ForceSyncRequest) returns (ForceSyncResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
@@ -10,11 +11,15 @@ service PsService {
     rpc Push(stream PushRequest) returns (stream PushResponse) {}
 }
 
+
 message CheckAliveRequest {}
 
 message CheckAliveResponse {
     bool status = 1; 
 }
+
+message FinishRequest {}
+message FinishResponse {}
 
 message BarrierNotifyRequest {}
 
