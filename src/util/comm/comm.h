@@ -63,11 +63,10 @@ private:
     void server_thread_func_();
 
     // Barrier
-    void BarrierNotified();
+    void barrier_notified_();
     std::mutex barrier_mu_;
     std::condition_variable barrier_cv_;
     int barrier_cnt_;
-
 
 friend class PsServiceServer;
 };

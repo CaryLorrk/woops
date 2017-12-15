@@ -27,7 +27,7 @@ grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
 grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,
         const rpc::BarrierNotifyRequest* req,
         rpc::BarrierNotifyResponse* res){
-    comm_->BarrierNotified();
+    comm_->barrier_notified_();
     return grpc::Status::OK;
 }
 

@@ -145,12 +145,13 @@ void Comm::Barrier() {
             stubs_[host]->BarrierNotify(&ctx, req, &res);
         }
         return;
-    }    
+    }
     stubs_[0]->BarrierNotify(&ctx, req, &res);
-    barrier_cv_.wait(lock);
+    barrier_cv_.wait(lock, [this]{return barrier_cnt_;});
+    barrier_cnt_ = 0;
 }
 
-void Comm::BarrierNotified() {
+void Comm::barrier_notified_() {
     {
         std::lock_guard<std::mutex> lock(barrier_mu_);
         barrier_cnt_ += 1;
@@ -160,6 +161,8 @@ void Comm::BarrierNotified() {
 
 Comm::~Comm() {
     LOG(INFO) << "Clean up.";
+    //Barrier();
+    
     for (auto& s: pull_streams_) {
         s->WritesDone();
     }
