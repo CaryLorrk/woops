@@ -20,6 +20,9 @@ public:
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
             const rpc::CheckAliveRequest* req, rpc::CheckAliveResponse* res) override;
 
+    grpc::Status Finish(grpc::ServerContext* ctx,
+            const rpc::FinishRequest* req, rpc::FinishResponse* res) override;
+
     grpc::Status BarrierNotify(grpc::ServerContext* ctx,
             const rpc::BarrierNotifyRequest* req, rpc::BarrierNotifyResponse* res) override;
 

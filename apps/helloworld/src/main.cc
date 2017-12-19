@@ -9,8 +9,8 @@
 #include "util/logging.h"
 
 constexpr int SIZE = 3;
-constexpr int NUM_TABLE = 1;
-constexpr int MAX_ITER = 10;
+constexpr int NUM_TABLE = 3;
+constexpr int MAX_ITER = 100;
 int main()
 {
     woops::InitializeFromFile("/root/config.in");

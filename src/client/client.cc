@@ -75,13 +75,6 @@ void Client::Update(const std::string& name, const void* data) {
         int8_t* offset_data = (int8_t*)data + offset;
 
         comm_->Update(server, name, offset_data, size, iteration_);
-        int min = *std::min_element(
-                table->iterations.begin(), table->iterations.end());
-        if (min < iteration_ - staleness_) {
-            for (size_t server = 0; server < hosts_.size(); ++server) {
-                comm_->Pull(server, name, iteration_);
-            }
-        }
 
 
         start = end;
@@ -100,6 +93,14 @@ void Client::Sync(const std::string& name) {
                     table->iterations.begin(), table->iterations.end());
             return min >= iteration_ - staleness_ - 1;
     });
+
+    int min = *std::min_element(
+            table->iterations.begin(), table->iterations.end());
+    if (min < iteration_ - staleness_) {
+        for (size_t server = 0; server < hosts_.size(); ++server) {
+            comm_->Pull(server, name, iteration_);
+        }
+    }
 }
 
 void Client::ForceSync() {

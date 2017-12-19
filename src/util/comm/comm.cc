@@ -133,19 +133,22 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server)
 
 // Barrier
 void Comm::Barrier() {
-    grpc::ClientContext ctx;
-    rpc::BarrierNotifyRequest req;
-    rpc::BarrierNotifyResponse res;
     std::unique_lock<std::mutex> lock(barrier_mu_);
     if (this_host_ == 0) {
         barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= hosts_.size() - 1;});
         barrier_cnt_ = 0;
 
         for (size_t host = 1; host < hosts_.size(); ++host) {
+            grpc::ClientContext ctx;
+            rpc::BarrierNotifyRequest req;
+            rpc::BarrierNotifyResponse res;
             stubs_[host]->BarrierNotify(&ctx, req, &res);
         }
         return;
     }
+    grpc::ClientContext ctx;
+    rpc::BarrierNotifyRequest req;
+    rpc::BarrierNotifyResponse res;
     stubs_[0]->BarrierNotify(&ctx, req, &res);
     barrier_cv_.wait(lock, [this]{return barrier_cnt_;});
     barrier_cnt_ = 0;
@@ -159,39 +162,22 @@ void Comm::barrier_notified_() {
     barrier_cv_.notify_all();
 }
 
-Comm::~Comm() {
-    LOG(INFO) << "Clean up.";
-    //Barrier();
-    
-    for (auto& s: pull_streams_) {
-        s->WritesDone();
-    }
-    for (auto& s: update_streams_) {
-        s->WritesDone();
-    }
-    for (auto& s: push_streams_) {
-        s->WritesDone();
-    }
-    rpc_server_->Shutdown();
-    for (auto& s: pull_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    for (auto& s: update_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
-        }
-    }
-    for (auto& s: push_streams_) {
-        auto status = s->Finish();
-        if (!status.ok()) {
-            LOG(FATAL) << "Failed to finish stream. Error code: " << status.error_code();
+void Comm::finish_() {
+    if (this_host_ == 0) {
+        for (size_t host = hosts_.size() - 1; host >= 0; --host) {
+            grpc::ClientContext ctx;
+            rpc::FinishRequest req;
+            rpc::FinishResponse res;
+            stubs_[host]->Finish(&ctx, req, &res);
         }
     }
     server_thread_.join();
+
+}
+
+Comm::~Comm() {
+    LOG(INFO) << "Clean up.";
+    finish_();
 }
 
 

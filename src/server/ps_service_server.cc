@@ -24,6 +24,11 @@ grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
     return grpc::Status::OK;
 }
 
+grpc::Status PsServiceServer::Finish(grpc::ServerContext* ctx,
+        const rpc::FinishRequest* req, rpc::FinishResponse* res) {
+    exit(0);
+}
+
 grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,
         const rpc::BarrierNotifyRequest* req,
         rpc::BarrierNotifyResponse* res){

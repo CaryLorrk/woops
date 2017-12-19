@@ -68,6 +68,8 @@ private:
     std::condition_variable barrier_cv_;
     int barrier_cnt_;
 
+    void finish_();
+
 friend class PsServiceServer;
 };
 
