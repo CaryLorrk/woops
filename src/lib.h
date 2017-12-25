@@ -18,10 +18,10 @@ public:
     static void InitializeFromFile(const std::string& filename);
 
     static void CreateTable(const TableConfig& config);
-    static void LocalAssign(const std::string& tablename, const void* data);
-    static void Update(const std::string& tablename, const void* data);
+    static void LocalAssign(int id, const void* data);
+    static void Update(int id, const void* data);
     static void Clock();
-    static void Sync(const std::string& tablename);
+    static void Sync(int id);
     static void ForceSync();
     static std::string ToString();
 

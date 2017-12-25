@@ -14,10 +14,10 @@ class PsServiceServer;
 class Server
 {
 public:
-    void Assign(const std::string& tablename, const void* data);
-    void Update(int client, const std::string& tablename, const void* delta, int iteration);
+    void Assign(int id, const void* data);
+    void Update(int client, int id, const void* delta, int iteration);
     void CreateTable(const TableConfig& config, size_t size);
-    const void* GetParameter(const std::string& tablename, int& iteration, size_t& size);
+    const void* GetParameter(int id, int& iteration, size_t& size);
     std::string ToString();
 
     void Initialize(const WoopsConfig& config, Comm* comm);
@@ -28,7 +28,7 @@ private:
     int this_host_;
     size_t num_hosts_;
     int staleness_;
-    std::map<std::string, std::unique_ptr<ServerTable>> tables_;
+    std::map<int, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
 }; 
 } /* woops */ 

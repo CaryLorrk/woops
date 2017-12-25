@@ -16,20 +16,20 @@ void CreateTable(const TableConfig& config){
     Lib::CreateTable(config);
 }
 
-void LocalAssign(const std::string& tablename, const void* data) {
-    Lib::LocalAssign(tablename, data);
+void LocalAssign(int id, const void* data) {
+    Lib::LocalAssign(id, data);
 }
 
-void Update(const std::string& tablename, const void* data){
-    Lib::Update(tablename, data);
+void Update(int id, const void* data){
+    Lib::Update(id, data);
 }
 
 void Clock() {
     Lib::Clock();
 }
 
-void Sync(const std::string& tablename) {
-    Lib::Sync(tablename);
+void Sync(int id) {
+    Lib::Sync(id);
 }
 
 void ForceSync() {

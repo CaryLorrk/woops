@@ -15,7 +15,7 @@ void Server::Initialize(const WoopsConfig& config, Comm* comm) {
 
 void Server::CreateTable(const TableConfig& config, size_t size) {
     std::lock_guard<std::mutex> lock(tables_mu_);
-    auto pair = tables_.emplace(config.name, std::make_unique<ServerTable>());
+    auto pair = tables_.emplace(config.id, std::make_unique<ServerTable>());
     auto& table = pair.first->second;
 
     table->storage = config.server_storage_constructor(size);
@@ -26,14 +26,14 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     table->iterations.resize(num_hosts_, -1);
 }
 
-void Server::Assign(const std::string& tablename, const void* data) {
-    auto& table = tables_[tablename];
+void Server::Assign(int id, const void* data) {
+    auto& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Assign(data);
 }
 
-void Server::Update(int client, const std::string& tablename, const void* delta, int iteration) {
-    auto& table = tables_[tablename];
+void Server::Update(int client, int id, const void* delta, int iteration) {
+    auto& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
     table->storage->Update(delta);
     if (table->iterations[client] < iteration) {
@@ -45,9 +45,9 @@ void Server::Update(int client, const std::string& tablename, const void* delta,
     }
 }
 
-const void* Server::GetParameter(const std::string& tablename,
+const void* Server::GetParameter(int id,
         int& iteration, size_t& size) {
-    auto& table = tables_[tablename];
+    auto& table = tables_[id];
     auto& storage = table->storage;
     int min;
     std::unique_lock<std::mutex> lock(table->mu); 

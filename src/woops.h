@@ -11,10 +11,10 @@ namespace woops
 void Initialize(const WoopsConfig& config); 
 void InitializeFromFile(const std::string& filename);
 void CreateTable(const TableConfig& config);
-void LocalAssign(const std::string& tablename, const void* data);
-void Update(const std::string& tablename, const void* data);
+void LocalAssign(int id, const void* data);
+void Update(int id, const void* data);
 void Clock();
-void Sync(const std::string& tablename);
+void Sync(int id);
 void ForceSync();
 std::string ToString();
 } /* woops */ 

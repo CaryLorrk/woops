@@ -13,7 +13,7 @@ namespace woops
 using StorageConstructor = std::function<std::unique_ptr<Storage>(size_t size)> ;
 
 struct TableConfig {
-    std::string name;
+    int id;
     size_t size;
     size_t element_size;
     StorageConstructor cache_constructor;

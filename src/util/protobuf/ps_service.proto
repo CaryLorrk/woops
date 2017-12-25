@@ -27,7 +27,7 @@ message BarrierNotifyRequest {}
 message BarrierNotifyResponse {}
 
 message ForceSyncRequest {
-    string tablename = 1;
+    int32 id = 1;
     bytes parameter = 2;
 }
 
@@ -35,7 +35,7 @@ message ForceSyncResponse {
 }
 
 message UpdateRequest {
-    string tablename = 1;
+    int32 id = 1;
     int32 iteration = 2;
     bytes delta = 3;
 }
@@ -44,14 +44,14 @@ message UpdateResponse {
 }
 
 message PullRequest {
-    string tablename = 1;
+    int32 id = 1;
     int32 iteration = 2;
 }
 
 message PullResponse {}
 
 message PushRequest {
-    string tablename = 1;
+    int32 id = 1;
     int32 iteration = 2;
     bytes parameter = 3;
 }

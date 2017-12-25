@@ -17,7 +17,7 @@ int main()
     //woops::InitializeFromFile("config.in");
     for (int i = 0; i < NUM_TABLE; ++i) {
         woops::TableConfig table_config;
-        table_config.name = std::to_string(i);
+        table_config.id = i;
         table_config.size = SIZE;
         table_config.element_size = sizeof(float);
         table_config.server_storage_constructor = [](size_t size){
@@ -35,21 +35,21 @@ int main()
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        woops::LocalAssign(std::to_string(j), a);
+        woops::LocalAssign(j, a);
     }
     woops::ForceSync();
     std::fill(a, a+SIZE, 1);
     for(int i = 0; i < MAX_ITER; ++i) {
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
-            woops::Sync(std::to_string(j));
-            woops::Update(std::to_string(j), a);
+            woops::Sync(j);
+            woops::Update(j, a);
         }
         woops::Clock();
     }
     delete[] a;
     for (int j = 0; j < NUM_TABLE; ++j) {
-        woops::Sync(std::to_string(j));
+        woops::Sync(j);
     }
     std::cout << woops::ToString() << std::endl;
 }

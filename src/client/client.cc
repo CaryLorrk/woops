@@ -19,7 +19,7 @@ void Client::Initialize(const WoopsConfig& config, Comm* comm) {
 }
 
 void Client::CreateTable(const TableConfig& config) {
-    auto pair = tables_.emplace(config.name, std::make_unique<ClientTable>());
+    auto pair = tables_.emplace(config.id, std::make_unique<ClientTable>());
     auto& table = pair.first->second;
     table->size = config.size;
     table->element_size = config.element_size;
@@ -45,13 +45,13 @@ void Client::CreateTable(const TableConfig& config) {
 }
 
 
-void Client::LocalAssign(const std::string& name, const void* data) {
-    auto& table = tables_[name];
+void Client::LocalAssign(int id, const void* data) {
+    auto& table = tables_[id];
     table->cache->Assign(data);
 }
 
-void Client::ServerAssign(int server, const std::string& tablename, const void* data, int iteration) {
-    auto& table = tables_[tablename];
+void Client::ServerAssign(int server, int id, const void* data, int iteration) {
+    auto& table = tables_[id];
     int start = server ? table->host_ends[server-1] : 0;
     int end = table->host_ends[server];
     {
@@ -64,8 +64,8 @@ void Client::ServerAssign(int server, const std::string& tablename, const void* 
     table->cv.notify_all();
 }
 
-void Client::Update(const std::string& name, const void* data) {
-    auto& table = tables_[name];
+void Client::Update(int id, const void* data) {
+    auto& table = tables_[id];
     auto& ends = table->host_ends;
     int start = 0;
     for (size_t server = 0; server < hosts_.size(); ++server) {
@@ -74,12 +74,12 @@ void Client::Update(const std::string& name, const void* data) {
         size_t offset = start * table->element_size;
         int8_t* offset_data = (int8_t*)data + offset;
 
-        comm_->Update(server, name, offset_data, size, iteration_);
+        comm_->Update(server, id, offset_data, size, iteration_);
         int min = *std::min_element(
                 table->iterations.begin(), table->iterations.end());
         if (min < iteration_ - staleness_) {
             for (size_t server = 0; server < hosts_.size(); ++server) {
-                comm_->Pull(server, name, iteration_);
+                comm_->Pull(server, id, iteration_);
             }
         }
 
@@ -92,10 +92,10 @@ void Client::Clock() {
     iteration_++;    
 }
 
-void Client::Sync(const std::string& name) {
-    auto& table = tables_[name];
+void Client::Sync(int id) {
+    auto& table = tables_[id];
     std::unique_lock<std::mutex> lock(table->mu);
-    table->cv.wait(lock, [this, &name, &table]{
+    table->cv.wait(lock, [this, &table]{
             int min = *std::min_element(
                     table->iterations.begin(), table->iterations.end());
             return min >= iteration_ - staleness_ - 1;
@@ -106,7 +106,7 @@ void Client::ForceSync() {
     LOG(INFO) << "ForceSync";
     if (this_host_ == 0) {
         for (auto& pair: tables_) {
-            const std::string &tablename = pair.first;
+            int id = pair.first;
             auto& table = pair.second;
             auto& ends = table->host_ends;
             int start = 0;
@@ -118,7 +118,7 @@ void Client::ForceSync() {
                 size = (end - start) * table->element_size;
                 size_t offset = start * table->element_size;
                 offset_data = static_cast<const int8_t*>(data) + offset;
-                comm_->ForceSync(host, tablename, offset_data, size);
+                comm_->ForceSync(host, id, offset_data, size);
 
                 start = end;
             }

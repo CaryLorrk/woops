@@ -44,14 +44,14 @@ void Lib::CreateTable(const TableConfig& config) {
     lib.client_.CreateTable(config);
 }
 
-void Lib::LocalAssign(const std::string& tablename, const void* data) {
+void Lib::LocalAssign(int id, const void* data) {
     Lib& lib = Get();
-    lib.client_.LocalAssign(tablename, data);
+    lib.client_.LocalAssign(id, data);
 }
 
-void Lib::Update(const std::string& tablename, const void* data) {
+void Lib::Update(int id, const void* data) {
     Lib& lib = Get();
-    lib.client_.Update(tablename, data);
+    lib.client_.Update(id, data);
 }
 
 void Lib::Clock() {
@@ -59,9 +59,9 @@ void Lib::Clock() {
     lib.client_.Clock();
 }
 
-void Lib::Sync(const std::string& tablename) {
+void Lib::Sync(int id) {
     Lib& lib = Get();
-    lib.client_.Sync(tablename); 
+    lib.client_.Sync(id); 
 }
 
 void Lib::ForceSync() {
