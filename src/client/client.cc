@@ -4,12 +4,14 @@
 
 #include "util/logging.h"
 #include "util/comm/comm.h"
+#include "util/placement/placement.h"
 
 namespace woops
 { 
 
 
-void Client::Initialize(const WoopsConfig& config, Comm* comm) {
+void Client::Initialize(const WoopsConfig& config, Comm* comm, Placement* placement) {
+    placement_ = placement;
     comm_ = comm;
 
     this_host_ = config.this_host;
@@ -25,23 +27,24 @@ void Client::CreateTable(const TableConfig& config) {
     table->element_size = config.element_size;
     table->cache = config.cache_constructor(table->size);
 
+    placement_->RegisterTable(config);
 
     /* split table */
-    int div = table->size / hosts_.size();
-    int mod = table->size % hosts_.size();
-    int idx = 0;
-    auto& ends = table->host_ends;
-    for (size_t i = 0; i < hosts_.size(); ++i) {
-        idx += i < (hosts_.size() - mod) ? div : div+1;
-        ends.push_back(idx);
-    }
-    int start = this_host_ == 0 ? 0 : ends[this_host_-1];
-    int end = ends[this_host_];
+    //int div = table->size / hosts_.size();
+    //int mod = table->size % hosts_.size();
+    //int idx = 0;
+    //auto& ends = table->host_ends;
+    //for (size_t i = 0; i < hosts_.size(); ++i) {
+        //idx += i < (hosts_.size() - mod) ? div : div+1;
+        //ends.push_back(idx);
+    //}
+    //int start = this_host_ == 0 ? 0 : ends[this_host_-1];
+    //int end = ends[this_host_];
 
 
     table->iterations.resize(hosts_.size(), -1);
-    comm_->CreateTable(config, end - start);
-    comm_->Barrier();
+    //comm_->CreateTable(config, end - start);
+    //comm_->Barrier();
 }
 
 

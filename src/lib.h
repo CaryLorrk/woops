@@ -27,6 +27,7 @@ public:
 
 private:
     WoopsConfig config_;
+    std::unique_ptr<Placement> placement_;
     Client client_;
     Server server_;
     Comm comm_;

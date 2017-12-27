@@ -21,7 +21,7 @@ void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.config_ = config;
 
-    lib.client_.Initialize(config, &lib.comm_);
+    lib.client_.Initialize(config, &lib.comm_, lib.placement_.get());
     lib.server_.Initialize(config, &lib.comm_);
     lib.comm_.Initialize(config, &lib.client_, &lib.server_);
 }

@@ -18,11 +18,12 @@
 namespace woops
 {
 
+class Placement;
 class Comm;
 class Client
 {
 public:
-    void Initialize(const WoopsConfig& config, Comm* comm);
+    void Initialize(const WoopsConfig& config, Comm* comm, Placement* placement);
     void CreateTable(const TableConfig& config);
     void LocalAssign(int id, const void* data);
     void ServerAssign(int server, int id, const void* data, int iteration);
@@ -35,6 +36,7 @@ public:
     Client();
 private:
     Comm* comm_;
+    Placement* placement_;
 
     /* config */
     int this_host_;
