@@ -15,7 +15,7 @@ void LocalAssign(int id, const void* data);
 void Update(int id, const void* data);
 void Clock();
 void Sync(int id);
-void ForceSync();
+void Start();
 std::string ToString();
 } /* woops */ 
 

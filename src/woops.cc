@@ -32,8 +32,8 @@ void Sync(int id) {
     Lib::Sync(id);
 }
 
-void ForceSync() {
-    Lib::ForceSync();
+void Start() {
+    Lib::Start();
 }
 
 std::string ToString() {

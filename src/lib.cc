@@ -7,6 +7,8 @@
 #include "util/protobuf/woops_config.pb.h"
 #include "util/logging.h"
 
+#include "util/placement/uniform_split_placement.h"
+
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
 
@@ -21,6 +23,7 @@ void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.config_ = config;
 
+    lib.placement_ = std::make_unique<UniformSplitPlacement>();
     lib.client_.Initialize(config, &lib.comm_, lib.placement_.get());
     lib.server_.Initialize(config, &lib.comm_);
     lib.comm_.Initialize(config, &lib.client_, &lib.server_);
@@ -64,9 +67,9 @@ void Lib::Sync(int id) {
     lib.client_.Sync(id); 
 }
 
-void Lib::ForceSync() {
+void Lib::Start() {
     Lib& lib = Get();
-    lib.client_.ForceSync();
+    lib.client_.Start();
 }
 
 std::string Lib::ToString() {

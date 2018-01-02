@@ -11,6 +11,7 @@
 
 namespace woops
 {
+class Placement;
 class Lib
 {
 public:
@@ -22,7 +23,7 @@ public:
     static void Update(int id, const void* data);
     static void Clock();
     static void Sync(int id);
-    static void ForceSync();
+    static void Start();
     static std::string ToString();
 
 private:

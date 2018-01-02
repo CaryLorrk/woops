@@ -27,7 +27,6 @@ void Client::CreateTable(const TableConfig& config) {
     table->element_size = config.element_size;
     table->cache = config.cache_constructor(table->size);
 
-    placement_->RegisterTable(config);
 
     /* split table */
     //int div = table->size / hosts_.size();
@@ -43,6 +42,8 @@ void Client::CreateTable(const TableConfig& config) {
 
 
     table->iterations.resize(hosts_.size(), -1);
+    placement_->RegisterTable(config);
+
     //comm_->CreateTable(config, end - start);
     //comm_->Barrier();
 }
@@ -103,6 +104,11 @@ void Client::Sync(int id) {
                     table->iterations.begin(), table->iterations.end());
             return min >= iteration_ - staleness_ - 1;
     });
+}
+
+void Client::Start() {
+    placement_->Decision();
+    ForceSync();
 }
 
 void Client::ForceSync() {

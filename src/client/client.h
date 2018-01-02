@@ -30,7 +30,7 @@ public:
     void Update(int id, const void* data);
     void Clock();
     void Sync(int id);
-    void ForceSync();
+    void Start();
     std::string ToString();
 
     Client();
@@ -46,6 +46,8 @@ private:
 
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
+
+    void ForceSync();
 }; /* woops */ 
 }
 

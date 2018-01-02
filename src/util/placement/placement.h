@@ -12,6 +12,7 @@ class Placement
 public:
     virtual void RegisterTable(const TableConfig& config) = 0;
     virtual void Decision() = 0;
+    virtual void Split() = 0;
 };    
 } /* woops */ 
 
