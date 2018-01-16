@@ -14,13 +14,14 @@
 namespace woops
 {
 struct ClientTable {
+    using Iterations = std::map<Hostid, Iteration>;
     std::unique_ptr<Storage> cache; 
     size_t size;
     size_t element_size;
     std::mutex  mu;
     std::condition_variable cv;
-    std::vector<int> iterations;
-    std::vector<int> host_ends;
+    Iterations iterations;
+    TableConfig config;
 };
 } /* woops */ 
 

@@ -38,7 +38,7 @@ grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::ForceSync(grpc::ServerContext* ctx,
         const rpc::ForceSyncRequest* req, rpc::ForceSyncResponse* res) {
-    int id = req->id();
+    int id = req->tableid();
     const void *data = req->parameter().data();
     server_->Assign(id, data);
     return grpc::Status::OK;
@@ -49,7 +49,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
     int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::UpdateRequest req;
     while (stream->Read(&req)) {
-        server_->Update(client, req.id(), req.delta().data(), req.iteration());        
+        server_->Update(client, req.tableid(), req.delta().data(), req.iteration());        
     }
     return grpc::Status::OK;
 }
@@ -61,7 +61,7 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
     std::mutex stream_mu;
     while(stream->Read(&req)) {
         std::thread t([this, req, &stream_mu, &stream, client] {
-            int id = req.id();
+            int id = req.tableid();
             int iteration = req.iteration();
             size_t size;
             const void* parameter = server_->GetParameter(id, iteration, size);
@@ -78,7 +78,7 @@ grpc::Status PsServiceServer::Push(grpc::ServerContext* ctx,
     int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PushRequest req;
     while(stream->Read(&req)) {
-        client_->ServerAssign(server, req.id(), req.parameter().data(), req.iteration());
+        client_->ServerAssign(server, req.tableid(), req.parameter().data(), req.iteration());
     }
     return grpc::Status::OK;
 }

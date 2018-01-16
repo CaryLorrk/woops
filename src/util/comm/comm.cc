@@ -16,15 +16,14 @@ void Comm::CreateTable(const TableConfig& config, size_t size) {
     server_->CreateTable(config, size);
 }
 
-void Comm::Update(int server, int id, const void* data,
-        size_t size, int iteration) {
+void Comm::Update(int server, int id, std::string& data, int iteration) {
     if (server == this_host_) {
-        server_->Update(this_host_, id, data, iteration);
+        server_->Update(this_host_, id, data.data(), iteration);
     } else {
         rpc::UpdateRequest req;
-        req.set_id(id);
+        req.set_tableid(id);
         req.set_iteration(iteration);
-        req.set_delta(data, size);
+        req.set_delta(std::move(data));
         std::lock_guard<std::mutex> lock(update_streams_mu_[server]);
         update_streams_[server]->Write(req);
     }
@@ -32,7 +31,7 @@ void Comm::Update(int server, int id, const void* data,
 
 void Comm::Pull(int server, int id, int iteration) {
     rpc::PullRequest req;
-    req.set_id(id);
+    req.set_tableid(id);
     req.set_iteration(iteration);
     std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
     pull_streams_[server]->Write(req);
@@ -40,17 +39,17 @@ void Comm::Pull(int server, int id, int iteration) {
 
 void Comm::Push(int client, int id, const void* data, size_t size, int iteration) {
     rpc::PushRequest req;
-    req.set_id(id);
+    req.set_tableid(id);
     req.set_parameter(data, size);
     req.set_iteration(iteration);
     std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
     push_streams_[client]->Write(req);
 }
 
-void Comm::ForceSync(int host, int id, const void* data, size_t size) {
+void Comm::ForceSync(Hostid host, Tableid id, std::string& data) {
     rpc::ForceSyncRequest req;
-    req.set_id(id);
-    req.set_parameter(data, size);
+    req.set_tableid(id);
+    req.set_parameter(std::move(data));
 
     grpc::ClientContext ctx;
     rpc::ForceSyncResponse res;

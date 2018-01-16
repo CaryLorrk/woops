@@ -8,6 +8,7 @@
 #include "util/logging.h"
 
 #include "util/placement/uniform_split_placement.h"
+#include "util/placement/round_robin_placement.h"
 
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
@@ -22,8 +23,9 @@ Lib& Lib::Get() {
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.config_ = config;
-
-    lib.placement_ = std::make_unique<UniformSplitPlacement>();
+    lib.placement_ = std::make_unique<RoundRobinPlacement>();
+    
+    lib.placement_->Initialize(config);
     lib.client_.Initialize(config, &lib.comm_, lib.placement_.get());
     lib.server_.Initialize(config, &lib.comm_);
     lib.comm_.Initialize(config, &lib.client_, &lib.server_);
@@ -52,7 +54,7 @@ void Lib::LocalAssign(int id, const void* data) {
     lib.client_.LocalAssign(id, data);
 }
 
-void Lib::Update(int id, const void* data) {
+void Lib::Update(int id, Storage& data) {
     Lib& lib = Get();
     lib.client_.Update(id, data);
 }
@@ -67,9 +69,9 @@ void Lib::Sync(int id) {
     lib.client_.Sync(id); 
 }
 
-void Lib::Start() {
+void Lib::ForceSync() {
     Lib& lib = Get();
-    lib.client_.Start();
+    lib.client_.ForceSync();
 }
 
 std::string Lib::ToString() {

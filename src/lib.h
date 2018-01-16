@@ -20,10 +20,10 @@ public:
 
     static void CreateTable(const TableConfig& config);
     static void LocalAssign(int id, const void* data);
-    static void Update(int id, const void* data);
+    static void Update(int id, Storage& data);
     static void Clock();
     static void Sync(int id);
-    static void Start();
+    static void ForceSync();
     static std::string ToString();
 
 private:

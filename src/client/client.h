@@ -10,6 +10,7 @@
 #include <vector>
 
 
+#include "util/typedef.h"
 #include "util/config/woops_config.h"
 #include "util/config/table_config.h"
 #include "client_table.h"
@@ -25,12 +26,12 @@ class Client
 public:
     void Initialize(const WoopsConfig& config, Comm* comm, Placement* placement);
     void CreateTable(const TableConfig& config);
-    void LocalAssign(int id, const void* data);
-    void ServerAssign(int server, int id, const void* data, int iteration);
-    void Update(int id, const void* data);
+    void LocalAssign(Tableid id, const void* data);
+    void ServerAssign(Hostid server, Tableid id, const void* data, int iteration);
+    void Update(Tableid id, Storage& data);
     void Clock();
-    void Sync(int id);
-    void Start();
+    void Sync(Tableid id);
+    void ForceSync();
     std::string ToString();
 
     Client();
@@ -47,7 +48,6 @@ private:
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
 
-    void ForceSync();
 }; /* woops */ 
 }
 

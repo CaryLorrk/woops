@@ -5,15 +5,15 @@
 #include <memory>
 #include <functional>
 
-#include "util/storage/storage.h"
+#include "util/typedef.h"
 
 namespace woops
 {
-
+class Storage;
 using StorageConstructor = std::function<std::unique_ptr<Storage>(size_t size)> ;
 
 struct TableConfig {
-    int id;
+    Tableid id;
     size_t size;
     size_t element_size;
     StorageConstructor cache_constructor;

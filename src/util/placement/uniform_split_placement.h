@@ -11,12 +11,10 @@ namespace woops
 class UniformSplitPlacement: public Placement
 {
 public:
-    void RegisterTable(const TableConfig& config) override;
+    void Initialize(const WoopsConfig& config) override;
     void Decision() override;
-    void Split() override;
 private:
-    std::vector<TableConfig> configs_;
-    std::unordered_map<int, int> begins;
+    size_t num_hosts_;
 };
     
 } /* woops */ 

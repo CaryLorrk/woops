@@ -21,6 +21,7 @@ public:
     const void* Serialize() const override;
     size_t GetSize() const override;
     void Assign(const void* data, size_t offset = 0, size_t size = -1) override;
+    std::map<Hostid, Bytes> Encoding(const Placement::Partitions& partitions) const override;
     void Update(const void* delta) override;
     std::string ToString() const override;
 
@@ -49,6 +50,17 @@ void DenseStorage<T>::Zerofy() {
 template<typename T>
 const void* DenseStorage<T>::Serialize() const {
     return data_.get();
+}
+
+template<typename T>
+std::map<Hostid, Bytes> DenseStorage<T>::Encoding(const Placement::Partitions& partitions) const {
+    std::map<Hostid, Bytes> ret;
+    for (auto& server_part: partitions) {
+        Hostid server = server_part.first;
+        const Placement::Partition& part = server_part.second;
+        ret[server] = std::string{(char*)&data_[part.begin], (char*)&data_[part.end]};
+    }
+    return ret;
 }
 
 template<typename T>

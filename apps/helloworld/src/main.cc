@@ -10,7 +10,7 @@
 
 constexpr int SIZE = 3;
 constexpr int NUM_TABLE = 3;
-constexpr int MAX_ITER = 100;
+constexpr int MAX_ITER = 5;
 int main()
 {
     woops::InitializeFromFile("/root/config.in");
@@ -43,7 +43,9 @@ int main()
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
-            woops::Update(j, a);
+            woops::DenseStorage<float> sa(SIZE);
+            sa.Assign(a);
+            woops::Update(j, sa);
         }
         woops::Clock();
     }

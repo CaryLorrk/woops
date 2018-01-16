@@ -24,11 +24,10 @@ public:
 
     void Initialize(const WoopsConfig& config, Client *client, Server *server);
     void CreateTable(const TableConfig& config, size_t size);
-    void Update(int server, int id,
-            const void* data, size_t size, int iteration);
-    void Pull(int server, int id, int iteration);
-    void Push(int client, int id, const void* data, size_t size, int iteration);
-    void ForceSync(int host, int id, const void* data, size_t size);
+    void Update(Hostid server, Tableid id, std::string& data, int iteration);
+    void Pull(Hostid server, Tableid id, int iteration);
+    void Push(Hostid client, Tableid id, const void* data, size_t size, int iteration);
+    void ForceSync(Hostid host, Tableid id, std::string& data);
 
     void Barrier();
 
