@@ -5,6 +5,7 @@ service PsService {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
     rpc Finish(FinishRequest) returns (FinishResponse) {}
     rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
+    rpc SyncPlacement(SyncPlacementRequest) returns (SyncPlacementResponse) {}
     rpc ForceSync(ForceSyncRequest) returns (ForceSyncResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
@@ -21,6 +22,12 @@ message CheckAliveResponse {
 message FinishRequest {}
 
 message FinishResponse {}
+
+message SyncPlacementRequest {}
+
+message SyncPlacementResponse {
+    bytes data = 1;
+}
 
 message BarrierNotifyRequest {}
 

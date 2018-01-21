@@ -91,35 +91,44 @@ void Client::Sync(Tableid id) {
 
 
 void Client::ForceSync() {
-    placement_->Decision();
-    for (auto& pair: tables_) {
-        Tableid id = pair.first;
-        auto& table = pair.second;
-        auto& partitions = placement_->GetPartitions(id);
+    LOG(INFO) << "ForceSync";
+    if (this_host_ == 0) {
+        placement_->Decision();
+    }
+    comm_->Barrier();
+    if (this_host_ != 0) {
+        comm_->SyncPlacement();
+    }
+    for (auto& kv: tables_) {
+        Tableid tableid = kv.first;
+        auto& table = kv.second;
+        auto& partitions = placement_->GetPartitions(tableid);
         for (auto& kv: partitions) {
-            if (kv.first == this_host_) {
-                auto begin = kv.second.begin;
-                auto end = kv.second.end;
+            Hostid server= kv.first;
+            Placement::Partition& partition = kv.second;
+            if (server == this_host_) {
+                auto begin = partition.begin;
+                auto end = partition.end;
                 comm_->CreateTable(table->config, end - begin);
             }
-            table->iterations[kv.first] = -1;
+            table->iterations[server] = -1;
         }
     }
     comm_->Barrier();
-    LOG(INFO) << "ForceSync";
     if (this_host_ == 0) {
-        for (auto& pair: tables_) {
-            Tableid id = pair.first;
-            auto& table = pair.second;
-            auto server_to_bytes = table->cache->Encoding(placement_->GetPartitions(id));
+        for (auto& kv: tables_) {
+            Tableid tableid = kv.first;
+            auto& table = kv.second;
+            auto server_to_bytes = table->cache->Encoding(placement_->GetPartitions(tableid));
             for (auto& kv: server_to_bytes) {
                 auto& server = kv.first;
                 auto& bytes = kv.second;
-                comm_->ForceSync(server, id, bytes);
+                comm_->ForceSync(server, tableid, bytes);
             }
         }
     }
     comm_->Barrier();
+    LOG(INFO) << "ForceSync End";
 }
 
 std::string Client::ToString() {

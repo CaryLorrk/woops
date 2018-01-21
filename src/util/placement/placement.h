@@ -20,9 +20,13 @@ public:
     using Partitions = std::map<Hostid, Partition>;
 
     virtual void Initialize(const WoopsConfig& config) = 0;
-    virtual void RegisterTable(const TableConfig& config);
     virtual void Decision() = 0;
-    virtual Partitions& GetPartitions(Tableid id);
+
+    void RegisterTable(const TableConfig& config);
+    Partitions& GetPartitions(Tableid id);
+    std::string Serialize();
+    void Deserialize(const std::string& data);
+    std::string ToString();
 protected:
     std::vector<TableConfig> configs_;
     std::map<Tableid, Partitions> table_to_partitions_;

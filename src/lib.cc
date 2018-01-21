@@ -9,6 +9,8 @@
 
 #include "util/placement/uniform_split_placement.h"
 #include "util/placement/round_robin_placement.h"
+#include "util/placement/greedy_placement.h"
+#include "util/placement/sorted_greedy_placement.h"
 
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
@@ -23,12 +25,12 @@ Lib& Lib::Get() {
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.config_ = config;
-    lib.placement_ = std::make_unique<RoundRobinPlacement>();
+    lib.placement_ = std::make_unique<UniformSplitPlacement>();
     
     lib.placement_->Initialize(config);
     lib.client_.Initialize(config, &lib.comm_, lib.placement_.get());
     lib.server_.Initialize(config, &lib.comm_);
-    lib.comm_.Initialize(config, &lib.client_, &lib.server_);
+    lib.comm_.Initialize(config, &lib.client_, &lib.server_, lib.placement_.get());
 }
 
 void Lib::InitializeFromFile(const std::string& filename) {

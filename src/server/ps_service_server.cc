@@ -1,5 +1,6 @@
 #include "ps_service_server.h"
 
+#include <cstdlib>
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -12,10 +13,11 @@
 
 namespace woops
 {
-PsServiceServer::PsServiceServer(Comm* comm, Client* client, Server* server):
+PsServiceServer::PsServiceServer(Comm* comm, Client* client, Server* server, Placement* placement):
     comm_(comm),
     client_(client),
-    server_(server) {}
+    server_(server),
+    placement_(placement){}
 
 grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
         const rpc::CheckAliveRequest* req,
@@ -26,7 +28,13 @@ grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::Finish(grpc::ServerContext* ctx,
         const rpc::FinishRequest* req, rpc::FinishResponse* res) {
-    exit(0);
+    std::abort();
+}
+
+grpc::Status PsServiceServer::SyncPlacement(grpc::ServerContext* ctx,
+        const rpc::SyncPlacementRequest* req, rpc::SyncPlacementResponse* res) {
+    res->set_data(placement_->Serialize());
+    return grpc::Status::OK;
 }
 
 grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,

@@ -2,6 +2,7 @@
 
 #include "util/logging.h"
 #include "util/protobuf/ps_service.grpc.pb.h"
+#include "util/placement/placement.h"
 
 #include "server/server.h"
 #include "client/client.h"
@@ -62,7 +63,7 @@ void Comm::server_thread_func_() {
 }
 
 using namespace std::chrono_literals;
-void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server) {
+void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server, Placement* placement) {
     this_host_ = config.this_host;
     staleness_ = config.staleness;
     port_ = config.port;
@@ -70,12 +71,13 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server)
 
     client_ = client;
     server_ = server;
+    placement_ = placement;
 
     /* server */
     grpc::ServerBuilder builder;
     builder.SetMaxMessageSize(100*1024*1024);
     builder.AddListeningPort("0.0.0.0:"+port_, grpc::InsecureServerCredentials());
-    service_ = std::make_unique<PsServiceServer>(this, client_, server_);
+    service_ = std::make_unique<PsServiceServer>(this, client_, server_, placement_);
     builder.RegisterService(service_.get());
     rpc_server_ = builder.BuildAndStart();
     server_thread_ = std::thread(&Comm::server_thread_func_, this);
@@ -154,11 +156,17 @@ void Comm::Barrier() {
 }
 
 void Comm::barrier_notified_() {
-    {
-        std::lock_guard<std::mutex> lock(barrier_mu_);
-        barrier_cnt_ += 1;
-    }
+    std::lock_guard<std::mutex> lock(barrier_mu_);
+    barrier_cnt_ += 1;
     barrier_cv_.notify_all();
+}
+
+void Comm::SyncPlacement() {
+    grpc::ClientContext ctx;
+    rpc::SyncPlacementRequest req;
+    rpc::SyncPlacementResponse res;
+    stubs_[0]->SyncPlacement(&ctx, req, &res);
+    placement_->Deserialize(res.data());
 }
 
 void Comm::finish_() {

@@ -14,6 +14,7 @@ namespace woops
 
 class Client;
 class Server;
+class Placement;
 class PsServiceServer;
 class WoopsConfig;
 class TableConfig;
@@ -22,12 +23,13 @@ class Comm
 public:
     Comm();
 
-    void Initialize(const WoopsConfig& config, Client *client, Server *server);
+    void Initialize(const WoopsConfig& config, Client *client, Server *server, Placement* placement_);
     void CreateTable(const TableConfig& config, size_t size);
     void Update(Hostid server, Tableid id, std::string& data, int iteration);
     void Pull(Hostid server, Tableid id, int iteration);
     void Push(Hostid client, Tableid id, const void* data, size_t size, int iteration);
     void ForceSync(Hostid host, Tableid id, std::string& data);
+    void SyncPlacement();
 
     void Barrier();
 
@@ -39,6 +41,7 @@ private:
     std::string port_;
     std::vector<std::string> hosts_;
 
+    Placement *placement_;
     Client *client_;
     Server *server_;
 

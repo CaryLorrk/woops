@@ -15,13 +15,16 @@ class Server;
 class PsServiceServer final: public rpc::PsService::Service
 {
 public:
-    PsServiceServer(Comm* comm, Client* client, Server* server);
+    PsServiceServer(Comm* comm, Client* client, Server* server, Placement* placement);
 
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
             const rpc::CheckAliveRequest* req, rpc::CheckAliveResponse* res) override;
 
     grpc::Status Finish(grpc::ServerContext* ctx,
             const rpc::FinishRequest* req, rpc::FinishResponse* res) override;
+
+    grpc::Status SyncPlacement(grpc::ServerContext* ctx,
+            const rpc::SyncPlacementRequest* req, rpc::SyncPlacementResponse* res) override;
 
     grpc::Status BarrierNotify(grpc::ServerContext* ctx,
             const rpc::BarrierNotifyRequest* req, rpc::BarrierNotifyResponse* res) override;
@@ -40,6 +43,7 @@ public:
 
 private:
     Comm* comm_;
+    Placement* placement_;
     Client* client_;
     Server* server_;
 };
