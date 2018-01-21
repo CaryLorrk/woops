@@ -48,4 +48,3 @@ apps/tensorflow/*/datasets/
 
 volume/
 apps/tensorflow/test/dataset/
-apps/tensorflow/test/benchmarks/tf_cnn_benchmarks/cifar10
