@@ -80,18 +80,17 @@ void Client::Sync(Tableid id) {
 }
 
 
-void Client::ForceSync() {
-    LOG(INFO) << "ForceSync";
+void Client::SyncPlacement() {
     if (Lib::ThisHost() == 0) {
         Lib::Placement()->Decision();
     }
-    LOG(INFO);
     Lib::Comm()->Barrier();
-    LOG(INFO);
     if (Lib::ThisHost() != 0) {
         Lib::Comm()->SyncPlacement();
     }
-    LOG(INFO);
+}
+
+void Client::SyncServer() {
     for (auto& kv: tables_) {
         Tableid tableid = kv.first;
         auto& table = kv.second;
@@ -107,9 +106,8 @@ void Client::ForceSync() {
             table->iterations[server] = -1;
         }
     }
-    LOG(INFO);
-    Lib::Comm()->Barrier();
-    LOG(INFO);
+}
+void Client::SyncClient() {
     if (Lib::ThisHost() == 0) {
         for (auto& kv: tables_) {
             Tableid tableid = kv.first;
@@ -122,9 +120,14 @@ void Client::ForceSync() {
             }
         }
     }
-    LOG(INFO);
+}
+void Client::ForceSync() {
+    LOG(INFO) << "ForceSync";
+    SyncPlacement();
+    SyncServer();
     Lib::Comm()->Barrier();
-    LOG(INFO) << "ForceSync End";
+    SyncClient();
+    Lib::Comm()->Barrier();
 }
 
 std::string Client::ToString() {

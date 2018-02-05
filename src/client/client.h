@@ -36,6 +36,10 @@ private:
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
 
+    void SyncPlacement();
+    void SyncServer();
+    void SyncClient();
+
 }; /* woops */ 
 }
 

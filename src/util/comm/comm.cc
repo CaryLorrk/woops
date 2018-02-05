@@ -125,34 +125,24 @@ void Comm::Initialize() {
 
 // Barrier
 void Comm::Barrier() {
-    LOG(INFO);
     std::unique_lock<std::mutex> lock(barrier_mu_);
-    LOG(INFO);
     if (Lib::ThisHost() == 0) {
-    LOG(INFO);
         barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= Lib::NumHosts() - 1;});
-    LOG(INFO);
         barrier_cnt_ = 0;
 
         for (size_t host = 1; host < Lib::NumHosts(); ++host) {
             grpc::ClientContext ctx;
             rpc::BarrierNotifyRequest req;
             rpc::BarrierNotifyResponse res;
-    LOG(INFO);
             stubs_[host]->BarrierNotify(&ctx, req, &res);
-    LOG(INFO);
         }
         return;
     }
-    LOG(INFO);
     grpc::ClientContext ctx;
     rpc::BarrierNotifyRequest req;
     rpc::BarrierNotifyResponse res;
-    LOG(INFO);
     stubs_[0]->BarrierNotify(&ctx, req, &res);
-    LOG(INFO);
     barrier_cv_.wait(lock, [this]{return barrier_cnt_;});
-    LOG(INFO);
     barrier_cnt_ = 0;
 }
 
@@ -176,9 +166,7 @@ void Comm::finish_() {
             grpc::ClientContext ctx;
             rpc::FinishRequest req;
             rpc::FinishResponse res;
-            LOG(INFO) << "send finish to " << host;
             stubs_[host]->Finish(&ctx, req, &res);
-            LOG(INFO) << "finish sent to " << host;
         }
     }
     server_thread_.join();
