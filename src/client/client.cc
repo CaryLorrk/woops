@@ -3,22 +3,13 @@
 #include <algorithm>
 
 #include "util/logging.h"
-#include "util/comm/comm.h"
 #include "util/placement/placement.h"
+#include "util/comm/comm.h"
+#include "lib.h"
 
 namespace woops
 { 
 
-
-void Client::Initialize(const WoopsConfig& config, Comm* comm, Placement* placement) {
-    placement_ = placement;
-    comm_ = comm;
-
-    this_host_ = config.this_host;
-    staleness_ = config.staleness;
-    port_ = config.port;
-    hosts_ = config.hosts;
-}
 
 void Client::CreateTable(const TableConfig& config) {
     auto pair = tables_.emplace(config.id, std::make_unique<ClientTable>());
@@ -27,7 +18,6 @@ void Client::CreateTable(const TableConfig& config) {
     table->element_size = config.element_size;
     table->cache = config.cache_constructor(table->size);
     table->config = config;
-    placement_->RegisterTable(config);
 }
 
 
@@ -38,7 +28,7 @@ void Client::LocalAssign(Tableid id, const void* data) {
 
 void Client::ServerAssign(Hostid server, Tableid id, const void* data, int iteration) {
     auto& table = tables_[id];
-    auto& partition = placement_->GetPartitions(id)[server];
+    auto& partition = Lib::Placement()->GetPartitions(id)[server];
     {
         std::lock_guard<std::mutex> lock(table->mu);
         table->cache->Assign(data, partition.begin, partition.end - partition.begin);
@@ -51,12 +41,12 @@ void Client::ServerAssign(Hostid server, Tableid id, const void* data, int itera
 
 void Client::Update(Tableid id, Storage& data) {
     auto& table = tables_[id];
-    auto& partitions = placement_->GetPartitions(id);
+    auto& partitions = Lib::Placement()->GetPartitions(id);
     auto server_to_bytes = data.Encoding(partitions);
     for (auto& kv: server_to_bytes) {
         auto& server = kv.first;
         auto& bytes = kv.second;
-        comm_->Update(server, id, bytes, iteration_);
+        Lib::Comm()->Update(server, id, bytes, iteration_);
     }
     int min = std::min_element(
             table->iterations.begin(), table->iterations.end(),
@@ -64,9 +54,9 @@ void Client::Update(Tableid id, Storage& data) {
                 ClientTable::Iterations::value_type& r) -> bool {
                 return l.second < r.second;
             })->second;
-    if (min < iteration_ - staleness_) {
+    if (min < iteration_ - Lib::Staleness()) {
         for (auto& kv: partitions) {
-            comm_->Pull(kv.first, id, iteration_);
+            Lib::Comm()->Pull(kv.first, id, iteration_);
         }
     }
 }
@@ -85,49 +75,55 @@ void Client::Sync(Tableid id) {
                         ClientTable::Iterations::value_type& r) -> bool {
                         return l.second < r.second;
                     })->second;
-            return min >= iteration_ - staleness_ - 1;
+            return min >= iteration_ - Lib::Staleness() - 1;
     });
 }
 
 
 void Client::ForceSync() {
     LOG(INFO) << "ForceSync";
-    if (this_host_ == 0) {
-        placement_->Decision();
+    if (Lib::ThisHost() == 0) {
+        Lib::Placement()->Decision();
     }
-    comm_->Barrier();
-    if (this_host_ != 0) {
-        comm_->SyncPlacement();
+    LOG(INFO);
+    Lib::Comm()->Barrier();
+    LOG(INFO);
+    if (Lib::ThisHost() != 0) {
+        Lib::Comm()->SyncPlacement();
     }
+    LOG(INFO);
     for (auto& kv: tables_) {
         Tableid tableid = kv.first;
         auto& table = kv.second;
-        auto& partitions = placement_->GetPartitions(tableid);
+        auto& partitions = Lib::Placement()->GetPartitions(tableid);
         for (auto& kv: partitions) {
             Hostid server= kv.first;
             Placement::Partition& partition = kv.second;
-            if (server == this_host_) {
+            if (server == Lib::ThisHost()) {
                 auto begin = partition.begin;
                 auto end = partition.end;
-                comm_->CreateTable(table->config, end - begin);
+                Lib::Comm()->CreateTable(table->config, end - begin);
             }
             table->iterations[server] = -1;
         }
     }
-    comm_->Barrier();
-    if (this_host_ == 0) {
+    LOG(INFO);
+    Lib::Comm()->Barrier();
+    LOG(INFO);
+    if (Lib::ThisHost() == 0) {
         for (auto& kv: tables_) {
             Tableid tableid = kv.first;
             auto& table = kv.second;
-            auto server_to_bytes = table->cache->Encoding(placement_->GetPartitions(tableid));
+            auto server_to_bytes = table->cache->Encoding(Lib::Placement()->GetPartitions(tableid));
             for (auto& kv: server_to_bytes) {
                 auto& server = kv.first;
                 auto& bytes = kv.second;
-                comm_->ForceSync(server, tableid, bytes);
+                Lib::Comm()->ForceSync(server, tableid, bytes);
             }
         }
     }
-    comm_->Barrier();
+    LOG(INFO);
+    Lib::Comm()->Barrier();
     LOG(INFO) << "ForceSync End";
 }
 

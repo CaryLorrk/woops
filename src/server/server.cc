@@ -2,16 +2,10 @@
 
 #include <mutex>
 
+#include "lib.h"
+
 namespace woops
 {
-
-void Server::Initialize(const WoopsConfig& config, Comm* comm) {
-    comm_ = comm;
-
-    this_host_ = config.this_host;
-    staleness_ = config.staleness;
-    num_hosts_ = config.hosts.size();
-}
 
 void Server::CreateTable(const TableConfig& config, size_t size) {
     std::lock_guard<std::mutex> lock(tables_mu_);
@@ -23,7 +17,7 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     table->size = size;
     table->element_size = config.element_size;
 
-    table->iterations.resize(num_hosts_, -1);
+    table->iterations.resize(Lib::NumHosts(), -1);
 }
 
 void Server::Assign(int id, const void* data) {
@@ -40,7 +34,7 @@ void Server::Update(int client, int id, const void* delta, int iteration) {
         table->iterations[client] = iteration;
     }
     int min = *std::min_element(table->iterations.begin(), table->iterations.end());
-    if (min >= iteration - staleness_) {
+    if (min >= iteration - Lib::Staleness()) {
         table->cv.notify_all();
     }
 }
@@ -53,7 +47,7 @@ const void* Server::GetParameter(int id,
     std::unique_lock<std::mutex> lock(table->mu); 
     table->cv.wait(lock, [this, &table, iteration, &min]{
         min = *std::min_element(table->iterations.begin(), table->iterations.end());
-        return min >= iteration - staleness_;
+        return min >= iteration - Lib::Staleness();
     });
     iteration = min;
     size = storage->GetSize();

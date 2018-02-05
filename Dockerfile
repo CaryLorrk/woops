@@ -2,10 +2,9 @@ FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 MAINTAINER CaryLorrk <carylorrk@gmail.com>
 
-ENV DOCKERFILE_APT_UPDATE_DATE 20171121
+ENV DOCKERFILE_APT_UPDATE_DATE 20180121
 
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
-        apt-get update 
+RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
         build-essential \
         curl \
@@ -23,7 +22,7 @@ RUN apt-get install -y --no-install-recommends \
         zlib1g-dev \
         openjdk-8-jdk \
         openjdk-8-jre-headless \
-        g++-7
+        wget
 
 RUN curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
@@ -38,18 +37,7 @@ RUN pip --no-cache-dir install \
 
 # Set up Bazel.
 
-RUN apt-get install -y --no-install-recommends openjdk-8-jdk openjdk-8-jre-headless
-
-# Running bazel inside a `docker build` command causes trouble, cf:
-#   https://github.com/bazelbuild/bazel/issues/134
-# The easiest solution is to set up a bazelrc file forcing --batch.
-#RUN echo "startup --batch" >>/etc/bazel.bazelrc
-# Similarly, we need to workaround sandboxing issues:
-#   https://github.com/bazelbuild/bazel/issues/418
-#RUN echo "build --spawn_strategy=standalone --genrule_strategy=standalone" \
-    #>>/etc/bazel.bazelrc
-# Install the most recent bazel release.
-ENV BAZEL_VERSION 0.4.5
+ENV BAZEL_VERSION 0.5.4
 WORKDIR /
 RUN mkdir /bazel && \
     cd /bazel && \
@@ -62,15 +50,11 @@ RUN mkdir /bazel && \
 
 # Configure the build for our CUDA configuration.
 ENV CI_BUILD_PYTHON python
-ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 ENV TF_NEED_CUDA 1
 ENV TF_CUDA_COMPUTE_CAPABILITIES=6.0,6.1
 
-
-# TensorBoard
-EXPOSE 6006
-# IPython
-EXPOSE 8888
+RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 WORKDIR /root
 

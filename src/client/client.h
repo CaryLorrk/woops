@@ -19,12 +19,9 @@
 namespace woops
 {
 
-class Placement;
-class Comm;
 class Client
 {
 public:
-    void Initialize(const WoopsConfig& config, Comm* comm, Placement* placement);
     void CreateTable(const TableConfig& config);
     void LocalAssign(Tableid id, const void* data);
     void ServerAssign(Hostid server, Tableid id, const void* data, int iteration);
@@ -36,15 +33,6 @@ public:
 
     Client();
 private:
-    Comm* comm_;
-    Placement* placement_;
-
-    /* config */
-    int this_host_;
-    int staleness_;
-    std::string port_;
-    std::vector<std::string> hosts_;
-
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
 

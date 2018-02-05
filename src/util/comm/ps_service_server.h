@@ -9,14 +9,9 @@
 
 namespace woops
 {
-class Comm;
-class Client;
-class Server;
 class PsServiceServer final: public rpc::PsService::Service
 {
 public:
-    PsServiceServer(Comm* comm, Client* client, Server* server, Placement* placement);
-
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
             const rpc::CheckAliveRequest* req, rpc::CheckAliveResponse* res) override;
 
@@ -40,12 +35,6 @@ public:
 
     grpc::Status Push(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) override;
-
-private:
-    Comm* comm_;
-    Placement* placement_;
-    Client* client_;
-    Server* server_;
 };
 } /* woops */ 
 

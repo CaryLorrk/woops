@@ -1,17 +1,14 @@
 #include "round_robin_placement.h"
 
+#include "lib.h"
+
 namespace woops
 {
-
-void RoundRobinPlacement::Initialize(const WoopsConfig& config) {
-    num_hosts_ = config.hosts.size();
-}
-
 void RoundRobinPlacement::Decision() {
     int last = 0;
-    for (auto& config: configs_) {
+    for (auto& config: Lib::TableConfigs()) {
         table_to_partitions_[config.id][last] = Partition{0, config.size};
-        last = (last + 1) % num_hosts_;
+        last = (last + 1) % Lib::NumHosts();
     }
 }
 

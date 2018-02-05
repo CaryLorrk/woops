@@ -8,8 +8,8 @@
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
 
-constexpr int SIZE = 3;
-constexpr int NUM_TABLE = 3;
+constexpr int SIZE = 27;
+constexpr int NUM_TABLE = 10;
 constexpr int MAX_ITER = 5;
 int main()
 {

@@ -10,10 +10,7 @@ namespace woops
 class RoundRobinPlacement: public Placement
 {
 public:
-    void Initialize(const WoopsConfig& config) override;
     void Decision() override;
-private:
-    size_t num_hosts_;
 }; 
 } /* woops */ 
 

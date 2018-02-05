@@ -7,6 +7,11 @@
 #include "util/protobuf/woops_config.pb.h"
 #include "util/logging.h"
 
+#include "util/placement/placement.h"
+#include "util/comm/comm.h"
+#include "client/client.h"
+#include "server/server.h"
+
 #include "util/placement/uniform_split_placement.h"
 #include "util/placement/round_robin_placement.h"
 #include "util/placement/greedy_placement.h"
@@ -17,20 +22,17 @@ using google::protobuf::TextFormat;
 
 namespace woops
 {
-Lib& Lib::Get() {
-    static Lib lib;
-    return lib;
-}
-
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
-    lib.config_ = config;
+    lib.woops_config_ = config;
+    //lib.placement_ = std::make_unique<RoundRobinPlacement>();
+    //lib.placement_ = std::make_unique<GreedyPlacement>();
+    //lib.placement_ = std::make_unique<SortedGreedyPlacement>();
     lib.placement_ = std::make_unique<UniformSplitPlacement>();
-    
-    lib.placement_->Initialize(config);
-    lib.client_.Initialize(config, &lib.comm_, lib.placement_.get());
-    lib.server_.Initialize(config, &lib.comm_);
-    lib.comm_.Initialize(config, &lib.client_, &lib.server_, lib.placement_.get());
+    lib.client_ = std::make_unique<woops::Client>();
+    lib.server_ = std::make_unique<woops::Server>();
+    lib.comm_ = std::make_unique<woops::Comm>();
+    lib.comm_->Initialize();
 }
 
 void Lib::InitializeFromFile(const std::string& filename) {
@@ -48,36 +50,38 @@ void Lib::InitializeFromFile(const std::string& filename) {
 
 void Lib::CreateTable(const TableConfig& config) {
     Lib& lib = Get();
-    lib.client_.CreateTable(config);
+    lib.table_configs_.push_back(config);
+    lib.client_->CreateTable(config);
 }
 
 void Lib::LocalAssign(int id, const void* data) {
     Lib& lib = Get();
-    lib.client_.LocalAssign(id, data);
+    lib.client_->LocalAssign(id, data);
 }
 
 void Lib::Update(int id, Storage& data) {
     Lib& lib = Get();
-    lib.client_.Update(id, data);
+    lib.client_->Update(id, data);
 }
 
 void Lib::Clock() {
     Lib& lib = Get();
-    lib.client_.Clock();
+    lib.client_->Clock();
 }
 
 void Lib::Sync(int id) {
     Lib& lib = Get();
-    lib.client_.Sync(id); 
+    lib.client_->Sync(id); 
 }
 
 void Lib::ForceSync() {
     Lib& lib = Get();
-    lib.client_.ForceSync();
+    lib.client_->ForceSync();
 }
 
 std::string Lib::ToString() {
     Lib& lib = Get();
-    return lib.client_.ToString();
+    return lib.client_->ToString();
 }
+
 } /* woops */ 

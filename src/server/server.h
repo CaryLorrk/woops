@@ -20,14 +20,7 @@ public:
     const void* GetParameter(int id, int& iteration, size_t& size);
     std::string ToString();
 
-    void Initialize(const WoopsConfig& config, Comm* comm);
-
 private:
-    Comm* comm_;
-
-    int this_host_;
-    size_t num_hosts_;
-    int staleness_;
     std::map<int, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
 }; 

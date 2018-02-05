@@ -6,15 +6,12 @@
 #include <condition_variable>
 #include <grpc++/grpc++.h>
 
-#include "server/ps_service_server.h"
+#include "ps_service_server.h"
 #include "util/config/woops_config.h"
 
 namespace woops
 {
 
-class Client;
-class Server;
-class Placement;
 class PsServiceServer;
 class WoopsConfig;
 class TableConfig;
@@ -23,7 +20,7 @@ class Comm
 public:
     Comm();
 
-    void Initialize(const WoopsConfig& config, Client *client, Server *server, Placement* placement_);
+    void Initialize();
     void CreateTable(const TableConfig& config, size_t size);
     void Update(Hostid server, Tableid id, std::string& data, int iteration);
     void Pull(Hostid server, Tableid id, int iteration);
@@ -35,16 +32,6 @@ public:
 
     ~Comm();
 private:
-    /* config */
-    int this_host_;
-    int staleness_;
-    std::string port_;
-    std::vector<std::string> hosts_;
-
-    Placement *placement_;
-    Client *client_;
-    Server *server_;
-
     std::unique_ptr<PsServiceServer> service_;
     std::unique_ptr<grpc::Server> rpc_server_;
     std::thread server_thread_;

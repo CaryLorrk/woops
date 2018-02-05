@@ -1,4 +1,5 @@
 #include "comm.h"
+#include "lib.h"
 
 #include "util/logging.h"
 #include "util/protobuf/ps_service.grpc.pb.h"
@@ -6,7 +7,6 @@
 
 #include "server/server.h"
 #include "client/client.h"
-#include "server/ps_service_server.h"
 
 namespace woops
 {
@@ -14,12 +14,12 @@ Comm::Comm():
     barrier_cnt_(0) {}
 
 void Comm::CreateTable(const TableConfig& config, size_t size) {
-    server_->CreateTable(config, size);
+    Lib::Server()->CreateTable(config, size);
 }
 
 void Comm::Update(int server, int id, std::string& data, int iteration) {
-    if (server == this_host_) {
-        server_->Update(this_host_, id, data.data(), iteration);
+    if (server == Lib::ThisHost()) {
+        Lib::Server()->Update(Lib::ThisHost(), id, data.data(), iteration);
     } else {
         rpc::UpdateRequest req;
         req.set_tableid(id);
@@ -63,21 +63,12 @@ void Comm::server_thread_func_() {
 }
 
 using namespace std::chrono_literals;
-void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server, Placement* placement) {
-    this_host_ = config.this_host;
-    staleness_ = config.staleness;
-    port_ = config.port;
-    hosts_ = config.hosts;
-
-    client_ = client;
-    server_ = server;
-    placement_ = placement;
-
+void Comm::Initialize() {
     /* server */
     grpc::ServerBuilder builder;
     builder.SetMaxMessageSize(100*1024*1024);
-    builder.AddListeningPort("0.0.0.0:"+port_, grpc::InsecureServerCredentials());
-    service_ = std::make_unique<PsServiceServer>(this, client_, server_, placement_);
+    builder.AddListeningPort("0.0.0.0:"+Lib::Port(), grpc::InsecureServerCredentials());
+    service_ = std::make_unique<PsServiceServer>();
     builder.RegisterService(service_.get());
     rpc_server_ = builder.BuildAndStart();
     server_thread_ = std::thread(&Comm::server_thread_func_, this);
@@ -87,10 +78,10 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server,
     LOG(INFO) << "Check servers:";
     grpc::ChannelArguments channel_args;
     channel_args.SetInt("grpc.max_message_length", 100*1024*1024);
-    for (auto& host: hosts_) {
+    for (auto& host: Lib::Hosts()) {
         while(1) {
             auto stub = rpc::PsService::NewStub(grpc::CreateCustomChannel(
-                            host+":"+port_,
+                            host+":"+Lib::Port(),
                             grpc::InsecureChannelCredentials(),
                             channel_args));
             grpc::ClientContext ctx;
@@ -109,22 +100,22 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server,
     }
 
     /* Client */
-    update_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
-    pull_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
-    push_streams_mu_ = std::make_unique<std::mutex[]>(hosts_.size());
-    for (size_t server = 0; server < hosts_.size(); server++) {
+    update_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    pull_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    push_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    for (size_t server = 0; server < Lib::NumHosts(); server++) {
         auto update_ctx = std::make_unique<grpc::ClientContext>();
-        update_ctx->AddMetadata("from_host", std::to_string(this_host_));
+        update_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
         update_streams_.push_back(stubs_[server]->Update(update_ctx.get()));
         update_ctxs_.push_back(std::move(update_ctx));
         
         auto pull_ctx = std::make_unique<grpc::ClientContext>();
-        pull_ctx->AddMetadata("from_host", std::to_string(this_host_));
+        pull_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
         pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
         pull_ctxs_.push_back(std::move(pull_ctx));
 
         auto push_ctx = std::make_unique<grpc::ClientContext>();
-        push_ctx->AddMetadata("from_host", std::to_string(this_host_));
+        push_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
         push_streams_.push_back(stubs_[server]->Push(push_ctx.get()));
         push_ctxs_.push_back(std::move(push_ctx));
     }
@@ -134,24 +125,34 @@ void Comm::Initialize(const WoopsConfig& config, Client *client, Server *server,
 
 // Barrier
 void Comm::Barrier() {
+    LOG(INFO);
     std::unique_lock<std::mutex> lock(barrier_mu_);
-    if (this_host_ == 0) {
-        barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= hosts_.size() - 1;});
+    LOG(INFO);
+    if (Lib::ThisHost() == 0) {
+    LOG(INFO);
+        barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= Lib::NumHosts() - 1;});
+    LOG(INFO);
         barrier_cnt_ = 0;
 
-        for (size_t host = 1; host < hosts_.size(); ++host) {
+        for (size_t host = 1; host < Lib::NumHosts(); ++host) {
             grpc::ClientContext ctx;
             rpc::BarrierNotifyRequest req;
             rpc::BarrierNotifyResponse res;
+    LOG(INFO);
             stubs_[host]->BarrierNotify(&ctx, req, &res);
+    LOG(INFO);
         }
         return;
     }
+    LOG(INFO);
     grpc::ClientContext ctx;
     rpc::BarrierNotifyRequest req;
     rpc::BarrierNotifyResponse res;
+    LOG(INFO);
     stubs_[0]->BarrierNotify(&ctx, req, &res);
+    LOG(INFO);
     barrier_cv_.wait(lock, [this]{return barrier_cnt_;});
+    LOG(INFO);
     barrier_cnt_ = 0;
 }
 
@@ -166,20 +167,21 @@ void Comm::SyncPlacement() {
     rpc::SyncPlacementRequest req;
     rpc::SyncPlacementResponse res;
     stubs_[0]->SyncPlacement(&ctx, req, &res);
-    placement_->Deserialize(res.data());
+    Lib::Placement()->Deserialize(res.data());
 }
 
 void Comm::finish_() {
-    if (this_host_ == 0) {
-        for (size_t host = hosts_.size() - 1; host >= 0; --host) {
+    if (Lib::ThisHost() == 0) {
+        for (size_t host = Lib::NumHosts() - 1; host >= 0; --host) {
             grpc::ClientContext ctx;
             rpc::FinishRequest req;
             rpc::FinishResponse res;
+            LOG(INFO) << "send finish to " << host;
             stubs_[host]->Finish(&ctx, req, &res);
+            LOG(INFO) << "finish sent to " << host;
         }
     }
     server_thread_.join();
-
 }
 
 Comm::~Comm() {

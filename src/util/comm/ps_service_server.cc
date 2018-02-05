@@ -1,10 +1,12 @@
 #include "ps_service_server.h"
+#include "lib.h"
 
 #include <cstdlib>
 #include <algorithm>
 #include <memory>
 #include <mutex>
 #include <thread>
+
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
 #include "util/comm/comm.h"
@@ -13,12 +15,6 @@
 
 namespace woops
 {
-PsServiceServer::PsServiceServer(Comm* comm, Client* client, Server* server, Placement* placement):
-    comm_(comm),
-    client_(client),
-    server_(server),
-    placement_(placement){}
-
 grpc::Status PsServiceServer::CheckAlive(grpc::ServerContext* ctx,
         const rpc::CheckAliveRequest* req,
         rpc::CheckAliveResponse* res){
@@ -33,14 +29,14 @@ grpc::Status PsServiceServer::Finish(grpc::ServerContext* ctx,
 
 grpc::Status PsServiceServer::SyncPlacement(grpc::ServerContext* ctx,
         const rpc::SyncPlacementRequest* req, rpc::SyncPlacementResponse* res) {
-    res->set_data(placement_->Serialize());
+    res->set_data(Lib::Placement()->Serialize());
     return grpc::Status::OK;
 }
 
 grpc::Status PsServiceServer::BarrierNotify(grpc::ServerContext* ctx,
         const rpc::BarrierNotifyRequest* req,
         rpc::BarrierNotifyResponse* res){
-    comm_->barrier_notified_();
+    Lib::Comm()->barrier_notified_();
     return grpc::Status::OK;
 }
 
@@ -48,7 +44,7 @@ grpc::Status PsServiceServer::ForceSync(grpc::ServerContext* ctx,
         const rpc::ForceSyncRequest* req, rpc::ForceSyncResponse* res) {
     int id = req->tableid();
     const void *data = req->parameter().data();
-    server_->Assign(id, data);
+    Lib::Server()->Assign(id, data);
     return grpc::Status::OK;
 }
 
@@ -57,7 +53,7 @@ grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
     int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::UpdateRequest req;
     while (stream->Read(&req)) {
-        server_->Update(client, req.tableid(), req.delta().data(), req.iteration());        
+        Lib::Server()->Update(client, req.tableid(), req.delta().data(), req.iteration());        
     }
     return grpc::Status::OK;
 }
@@ -72,8 +68,8 @@ grpc::Status PsServiceServer::Pull(grpc::ServerContext* ctx,
             int id = req.tableid();
             int iteration = req.iteration();
             size_t size;
-            const void* parameter = server_->GetParameter(id, iteration, size);
-            comm_->Push(client, id, parameter, size, iteration);
+            const void* parameter = Lib::Server()->GetParameter(id, iteration, size);
+            Lib::Comm()->Push(client, id, parameter, size, iteration);
         });
         t.detach();
         
@@ -86,7 +82,7 @@ grpc::Status PsServiceServer::Push(grpc::ServerContext* ctx,
     int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PushRequest req;
     while(stream->Read(&req)) {
-        client_->ServerAssign(server, req.tableid(), req.parameter().data(), req.iteration());
+        Lib::Client()->ServerAssign(server, req.tableid(), req.parameter().data(), req.iteration());
     }
     return grpc::Status::OK;
 }

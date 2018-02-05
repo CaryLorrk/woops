@@ -1,6 +1,6 @@
 IMAGE=carylorrk/woops-test
 CONTAINER=woops-test
-NUM=2
+NUM=4
 
 all: build
 

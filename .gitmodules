@@ -1,6 +1,7 @@
-[submodule "apps/tensorflow/tensorflow"]
-	path = apps/tensorflow/tensorflow
-	url = https://github.com/CaryLorrk/tensorflow.git
 [submodule "apps/tensorflow/test/models/models"]
 	path = apps/tensorflow/test/models/models
 	url = https://github.com/CaryLorrk/models.git
+[submodule "apps/tensorflow/tensorflow"]
+	path = apps/tensorflow/tensorflow
+	url = https://github.com/CaryLorrk/tensorflow.git
+	branch = woops
