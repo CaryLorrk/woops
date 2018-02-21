@@ -19,7 +19,7 @@ void Comm::CreateTable(const TableConfig& config, size_t size) {
 
 void Comm::Update(int server, int id, std::string& data, int iteration) {
     if (server == Lib::ThisHost()) {
-        Lib::Server()->Update(Lib::ThisHost(), id, data.data(), iteration);
+        Lib::Server()->Update(Lib::ThisHost(), id, data, iteration);
     } else {
         rpc::UpdateRequest req;
         req.set_tableid(id);

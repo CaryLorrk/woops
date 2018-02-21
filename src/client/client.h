@@ -24,7 +24,8 @@ class Client
 public:
     void CreateTable(const TableConfig& config);
     void LocalAssign(Tableid id, const void* data);
-    void ServerAssign(Hostid server, Tableid id, const void* data, int iteration);
+    //void ServerAssign(Hostid server, Tableid id, const void* data, int iteration);
+    void ServerAssign(Hostid server, Tableid id,const Bytes& bytes, int iteration);
     void Update(Tableid id, Storage& data);
     void Clock();
     void Sync(Tableid id);

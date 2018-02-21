@@ -26,10 +26,44 @@ void Server::Assign(int id, const void* data) {
     table->storage->Assign(data);
 }
 
-void Server::Update(int client, int id, const void* delta, int iteration) {
+static std::string string_to_hex(const std::string& input)
+{
+    static const char* const lut = "0123456789ABCDEF";
+    size_t len = input.length();
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = input[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
+}
+
+static std::string chars_to_hex(const char* input, size_t len)
+{
+    static const char* const lut = "0123456789ABCDEF";
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = input[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
+}
+
+//void Server::Update(int client, int id, const void* delta, size_t len, int iteration) {
+void Server::Update(int client, int id, const Bytes& bytes, int iteration) {
     auto& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
-    table->storage->Update(delta);
+    //Bytes bytes((const char*)delta, len);
+    //table->storage->Update(bytes.data());
+    table->storage->Decoding(bytes);
     if (table->iterations[client] < iteration) {
         table->iterations[client] = iteration;
     }

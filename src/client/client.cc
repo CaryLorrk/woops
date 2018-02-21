@@ -26,12 +26,14 @@ void Client::LocalAssign(Tableid id, const void* data) {
     table->cache->Assign(data);
 }
 
-void Client::ServerAssign(Hostid server, Tableid id, const void* data, int iteration) {
+//void Client::ServerAssign(Hostid server, Tableid id, const void* data, int iteration) {
+void Client::ServerAssign(Hostid server, Tableid id, const Bytes& bytes, int iteration) {
     auto& table = tables_[id];
     auto& partition = Lib::Placement()->GetPartitions(id)[server];
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->cache->Assign(data, partition.begin, partition.end - partition.begin);
+        //table->cache->Decoding(bytes, partition.begin);
+        table->cache->Assign(bytes.data(), partition.begin, partition.end - partition.begin);
         if (table->iterations[server] < iteration) {
             table->iterations[server] = iteration;
         }

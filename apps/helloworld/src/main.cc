@@ -8,8 +8,10 @@
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
 
-constexpr int SIZE = 27;
-constexpr int NUM_TABLE = 10;
+using StorageType = woops::DenseStorage<float>;
+
+constexpr int SIZE = 3;
+constexpr int NUM_TABLE = 3;
 constexpr int MAX_ITER = 5;
 int main()
 {
@@ -21,11 +23,11 @@ int main()
         table_config.size = SIZE;
         table_config.element_size = sizeof(float);
         table_config.server_storage_constructor = [](size_t size){
-                         return std::unique_ptr<woops::Storage>(new woops::DenseStorage<float>(size));
+                         return std::unique_ptr<woops::Storage>(new StorageType(size, StorageType::DecodingType::UPDATE));
                        
         };
         table_config.cache_constructor = [](size_t size){
-                         return std::unique_ptr<woops::Storage>(new woops::DenseStorage<float>(size));
+                         return std::unique_ptr<woops::Storage>(new StorageType(size, StorageType::DecodingType::ASSIGN));
                        
         };
         woops::CreateTable(table_config);
@@ -43,7 +45,7 @@ int main()
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
-            woops::DenseStorage<float> sa(SIZE);
+            StorageType sa(SIZE);
             sa.Assign(a);
             woops::Update(j, sa);
         }

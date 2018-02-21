@@ -14,7 +14,8 @@ template<typename T>
 class DenseStorage: public Storage
 {
 public:
-    DenseStorage(size_t size);
+    enum class DecodingType {ASSIGN, UPDATE};
+    DenseStorage(size_t size, DecodingType decoding_type = DecodingType::UPDATE);
     virtual ~DenseStorage();
 
     void Zerofy() override;
@@ -22,6 +23,7 @@ public:
     size_t GetSize() const override;
     void Assign(const void* data, size_t offset = 0, size_t size = -1) override;
     std::map<Hostid, Bytes> Encoding(const Placement::Partitions& partitions) const override;
+    void Decoding(const Bytes& bytes, size_t offset, size_t size) override;
     void Update(const void* delta) override;
     std::string ToString() const override;
 
@@ -29,13 +31,32 @@ private:
     size_t size_;
     std::unique_ptr<T[]> data_;
     std::mutex mu_;
+    void (DenseStorage<T>::* decoding_func_)(const Bytes& bytes, size_t offset, size_t size);
+
+    void assign_decoding_(const Bytes& bytes, size_t offset, size_t size) {
+        Assign(bytes.data(), offset, bytes.size()/sizeof(T));
+    }
+
+    void update_decoding_(const Bytes& bytes, size_t offset, size_t size) {
+        Update(bytes.data());
+    }
 };
 
 template<typename T>
-DenseStorage<T>::DenseStorage(size_t size):
+DenseStorage<T>::DenseStorage(size_t size, DecodingType decoding_type):
     size_(size),
     data_(new T[size])
 {
+    switch (decoding_type) {
+        case DecodingType::ASSIGN:
+            decoding_func_ = &DenseStorage::assign_decoding_;
+            break;
+        case DecodingType::UPDATE:
+            decoding_func_ = &DenseStorage::update_decoding_;
+            break;
+        default:
+            LOG(FATAL) << "wrong decoding type.";
+    }
 }
 
 template<typename T>
@@ -61,6 +82,11 @@ std::map<Hostid, Bytes> DenseStorage<T>::Encoding(const Placement::Partitions& p
         ret[server] = std::string{(char*)&data_[part.begin], (char*)&data_[part.end]};
     }
     return ret;
+}
+
+template<typename T>
+void DenseStorage<T>::Decoding(const Bytes& bytes, size_t offset, size_t size) {
+    (this->*decoding_func_)(bytes, offset, size);
 }
 
 template<typename T>

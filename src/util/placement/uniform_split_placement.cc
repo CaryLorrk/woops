@@ -14,7 +14,9 @@ void UniformSplitPlacement::Decision() {
         int idx = 0;
         for (int server = 0; server < Lib::NumHosts(); ++server) {
             idx += server < (Lib::NumHosts() - mod) ? div : div+1;
-            partitions[server] = Partition{prev, idx};
+            if (idx != prev) {
+                partitions[server] = Partition{prev, idx};
+            }
             prev = idx;
         }
     }

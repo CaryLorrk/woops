@@ -48,12 +48,45 @@ grpc::Status PsServiceServer::ForceSync(grpc::ServerContext* ctx,
     return grpc::Status::OK;
 }
 
+static std::string string_to_hex(const std::string& input)
+{
+    static const char* const lut = "0123456789ABCDEF";
+    size_t len = input.length();
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = input[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
+}
+
+static std::string chars_to_hex(const char* input, size_t len)
+{
+    static const char* const lut = "0123456789ABCDEF";
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = input[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
+}
+
 grpc::Status PsServiceServer::Update(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) {
     int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::UpdateRequest req;
     while (stream->Read(&req)) {
-        Lib::Server()->Update(client, req.tableid(), req.delta().data(), req.iteration());        
+        Bytes bytes(req.delta());
+        //Lib::Server()->Update(client, req.tableid(), bytes.data(), bytes.size(), req.iteration());        
+        Lib::Server()->Update(client, req.tableid(), bytes, req.iteration());        
     }
     return grpc::Status::OK;
 }
@@ -82,7 +115,9 @@ grpc::Status PsServiceServer::Push(grpc::ServerContext* ctx,
     int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PushRequest req;
     while(stream->Read(&req)) {
-        Lib::Client()->ServerAssign(server, req.tableid(), req.parameter().data(), req.iteration());
+        //Lib::Client()->ServerAssign(server, req.tableid(), req.parameter().data(), req.iteration());
+        Bytes bytes(req.parameter());
+        Lib::Client()->ServerAssign(server, req.tableid(), bytes, req.iteration());
     }
     return grpc::Status::OK;
 }

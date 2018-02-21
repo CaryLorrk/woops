@@ -15,7 +15,8 @@ class Server
 {
 public:
     void Assign(int id, const void* data);
-    void Update(int client, int id, const void* delta, int iteration);
+    void Update(int client, int id, const void* delta, size_t len, int iteration);
+    void Update(int client, int id, const Bytes& bytes, int iteration);
     void CreateTable(const TableConfig& config, size_t size);
     const void* GetParameter(int id, int& iteration, size_t& size);
     std::string ToString();
