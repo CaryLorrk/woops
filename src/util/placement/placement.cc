@@ -11,14 +11,16 @@ Placement::Partitions& Placement::GetPartitions(Tableid id) {
 
 std::string Placement::ToString() {
     std::stringstream ss;
+    ss << "table;host;size\n";
     for (auto& kv: table_to_partitions_) {
         Tableid tableid = kv.first;
         Partitions& partitions = kv.second;
-        ss << "table: " << tableid << '\n';
+        //ss << "table: " << tableid << '\n';
         for (auto& kv: partitions) {
             Hostid hostid = kv.first;
             Partition& partition = kv.second;
-            ss << hostid << " " << partition.begin << " " << partition.end << '\n';
+            ss << tableid << ";" << hostid << ";" << partition.end - partition.begin << "\n";
+            //ss << hostid << " " << partition.begin << " " << partition.end << '\n';
         }
         
     }

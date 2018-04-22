@@ -4,7 +4,7 @@ CONTAINER=woops
 all: build
 
 attach:
-	nvidia-docker exec -it $(CONTAINER) bash
+	docker exec -it $(CONTAINER) bash
 
 rmf:
 	docker rm -f $(CONTAINER)
@@ -13,11 +13,11 @@ stop:
 	docker stop $(CONTAINER)
 
 start:
-	nvidia-docker start $(CONTAINER)
+	docker start $(CONTAINER)
 
 run:
 	mkdir -p cache volume
-	nvidia-docker run -d -P --name $(CONTAINER) -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v `pwd`/cache:/root/.cache $(IMAGE)
+	docker run --runtime=nvidia -d -P --name $(CONTAINER) -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v `pwd`/cache:/root/.cache $(IMAGE)
 
 build:
 	docker build -t $(IMAGE) .

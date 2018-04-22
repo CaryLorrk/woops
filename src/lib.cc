@@ -25,10 +25,10 @@ namespace woops
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.woops_config_ = config;
-    //lib.placement_ = std::make_unique<RoundRobinPlacement>();
+    lib.placement_ = std::make_unique<RoundRobinPlacement>();
     //lib.placement_ = std::make_unique<GreedyPlacement>();
     //lib.placement_ = std::make_unique<SortedGreedyPlacement>();
-    lib.placement_ = std::make_unique<UniformSplitPlacement>();
+    //lib.placement_ = std::make_unique<UniformSplitPlacement>();
     lib.client_ = std::make_unique<woops::Client>();
     lib.server_ = std::make_unique<woops::Server>();
     lib.comm_ = std::make_unique<woops::Comm>();

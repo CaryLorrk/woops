@@ -1,11 +1,11 @@
 IMAGE=carylorrk/woops-test
 CONTAINER=woops-test
-NUM=4
+NUM=2
 
 all: build
 
 attach:
-	nvidia-docker exec -it $(CONTAINER)-$(INDEX) bash
+	docker exec -it $(CONTAINER)-$(INDEX) bash
 
 rmf:
 	for i in `seq -w $(NUM)`; do \
@@ -35,7 +35,7 @@ run:
 	touch config.in
 	echo staleness: 0 >> config.in
 	for i in `seq -w $(NUM)`; do \
-		nvidia-docker run -d --privileged --name $(CONTAINER)-$${i} -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v /var/lib/docker:/var/lib/docker -v /:/host $(IMAGE); \
+		docker run --runtime=nvidia -d --privileged --name $(CONTAINER)-$${i} -v `pwd`/volume:/root/volume -v `pwd`:/root/woops -v /var/lib/docker:/var/lib/docker -v /:/host $(IMAGE); \
 		ip=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(CONTAINER)-$${i}`; \
 		echo hosts: \"$${ip}\" >> config.in; \
 	done
