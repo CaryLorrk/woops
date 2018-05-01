@@ -1,12 +1,12 @@
 syntax = "proto3";
 package woops.rpc;
 
-service PsService {
+service Comm {
     rpc CheckAlive(CheckAliveRequest) returns (CheckAliveResponse) {}
     rpc Finish(FinishRequest) returns (FinishResponse) {}
     rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
     rpc SyncPlacement(SyncPlacementRequest) returns (SyncPlacementResponse) {}
-    rpc ForceSync(ForceSyncRequest) returns (ForceSyncResponse) {}
+    rpc Assign(AssignRequest) returns (AssignResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
     rpc Push(stream PushRequest) returns (stream PushResponse) {}
@@ -33,12 +33,12 @@ message BarrierNotifyRequest {}
 
 message BarrierNotifyResponse {}
 
-message ForceSyncRequest {
+message AssignRequest {
     int32 tableid = 1;
     bytes parameter = 2;
 }
 
-message ForceSyncResponse {
+message AssignResponse {
 }
 
 message UpdateRequest {

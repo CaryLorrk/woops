@@ -22,36 +22,37 @@ int main()
         table_config.id = i;
         table_config.size = SIZE;
         table_config.element_size = sizeof(float);
-        table_config.server_storage_constructor = [](size_t size){
-                         return std::unique_ptr<woops::Storage>(new StorageType(size, StorageType::DecodingType::UPDATE));
+        table_config.server_storage_constructor = [](){
+                         return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
                        
         };
-        table_config.cache_constructor = [](size_t size){
-                         return std::unique_ptr<woops::Storage>(new StorageType(size, StorageType::DecodingType::ASSIGN));
+        table_config.cache_constructor = [](){
+                         return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
                        
         };
         woops::CreateTable(table_config);
     }
-    auto a = new float[SIZE];
+    std::vector<float> a(SIZE);
+    woops::Start();
     for (int j = 0; j < NUM_TABLE; ++j) {
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        woops::LocalAssign(j, a);
+        woops::Bytes b(reinterpret_cast<char*>(a.data()), a.size() * sizeof(float));
+        woops::Assign(j, b);
     }
-    woops::ForceSync();
-    std::fill(a, a+SIZE, 1);
+    std::cout << woops::ToString() << std::endl;
+    std::fill(a.begin(), a.end(), 1);
     for(int i = 0; i < MAX_ITER; ++i) {
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
             StorageType sa(SIZE);
-            sa.Assign(a);
+            sa.Assign(a.data());
             woops::Update(j, sa);
         }
         woops::Clock();
     }
-    delete[] a;
     for (int j = 0; j < NUM_TABLE; ++j) {
         woops::Sync(j);
     }

@@ -36,7 +36,7 @@ def main(_):
         tf.woops_register_trainable(str(var.name[:-2]))
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
-    tf.woops_force_sync()
+    tf.woops_start()
     # Train
     for i in range(10000):
         batch_xs, batch_ys = mnist.train.next_batch(100)

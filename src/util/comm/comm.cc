@@ -2,7 +2,7 @@
 #include "lib.h"
 
 #include "util/logging.h"
-#include "util/protobuf/ps_service.grpc.pb.h"
+#include "util/protobuf/comm.grpc.pb.h"
 #include "util/placement/placement.h"
 
 #include "server/server.h"
@@ -12,10 +12,6 @@ namespace woops
 {
 Comm::Comm():
     barrier_cnt_(0) {}
-
-void Comm::CreateTable(const TableConfig& config, size_t size) {
-    Lib::Server()->CreateTable(config, size);
-}
 
 void Comm::Update(int server, int id, std::string& data, int iteration) {
     if (server == Lib::ThisHost()) {
@@ -38,23 +34,24 @@ void Comm::Pull(int server, int id, int iteration) {
     pull_streams_[server]->Write(req);
 }
 
-void Comm::Push(int client, int id, const void* data, size_t size, int iteration) {
+void Comm::Push(int client, int id, Bytes bytes, int iteration) {
     rpc::PushRequest req;
     req.set_tableid(id);
-    req.set_parameter(data, size);
+    req.set_parameter(std::move(bytes));
     req.set_iteration(iteration);
     std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
     push_streams_[client]->Write(req);
 }
 
-void Comm::ForceSync(Hostid host, Tableid id, std::string& data) {
-    rpc::ForceSyncRequest req;
+void Comm::Assign(Hostid host, Tableid id, Bytes bytes) {
+    rpc::AssignRequest req;
     req.set_tableid(id);
-    req.set_parameter(std::move(data));
+    req.set_parameter(std::move(bytes));
 
     grpc::ClientContext ctx;
-    rpc::ForceSyncResponse res;
-    stubs_[host]->ForceSync(&ctx, req, &res);
+    ctx.AddMetadata("from_host", std::to_string(Lib::ThisHost()));
+    rpc::AssignResponse res;
+    stubs_[host]->Assign(&ctx, req, &res);
 }
 
 
@@ -68,7 +65,7 @@ void Comm::Initialize() {
     grpc::ServerBuilder builder;
     builder.SetMaxMessageSize(100*1024*1024);
     builder.AddListeningPort("0.0.0.0:"+Lib::Port(), grpc::InsecureServerCredentials());
-    service_ = std::make_unique<PsServiceServer>();
+    service_ = std::make_unique<CommServer>();
     builder.RegisterService(service_.get());
     rpc_server_ = builder.BuildAndStart();
     server_thread_ = std::thread(&Comm::server_thread_func_, this);
@@ -80,7 +77,7 @@ void Comm::Initialize() {
     channel_args.SetInt("grpc.max_message_length", 100*1024*1024);
     for (auto& host: Lib::Hosts()) {
         while(1) {
-            auto stub = rpc::PsService::NewStub(grpc::CreateCustomChannel(
+            auto stub = rpc::Comm::NewStub(grpc::CreateCustomChannel(
                             host+":"+Lib::Port(),
                             grpc::InsecureChannelCredentials(),
                             channel_args));

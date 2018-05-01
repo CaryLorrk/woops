@@ -35,7 +35,7 @@ for var in tf.trainable_variables():
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
-tf.woops_force_sync()
+tf.woops_start()
 
 for i in range(10):
     print("==================start: "+str(i) + "==========================")

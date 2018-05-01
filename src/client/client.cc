@@ -16,22 +16,38 @@ void Client::CreateTable(const TableConfig& config) {
     auto& table = pair.first->second;
     table->size = config.size;
     table->element_size = config.element_size;
-    table->cache = config.cache_constructor(table->size);
+    table->cache = config.cache_constructor();
     table->config = config;
 }
 
+void Client::Assign(Tableid tableid, const Bytes& bytes) {
+    for (Hostid hostid = 0; hostid < Lib::NumHosts(); ++hostid) {
+        Lib::Comm()->Assign(hostid, tableid, bytes);
+    }
+}
 
-void Client::LocalAssign(Tableid id, const void* data) {
+void Client::LocalAssign(Tableid id, const Bytes& bytes) {
     auto& table = tables_[id];
-    table->cache->Assign(data);
+    table->cache->Assign(bytes);
 }
 
 void Client::ServerAssign(Hostid server, Tableid id, const Bytes& bytes, int iteration) {
     auto& table = tables_[id];
-    auto& partition = Lib::Placement()->GetPartitions(id)[server];
+    auto& partition = Lib::Placement()->GetPartitions(id).at(server);
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->cache->Decoding(bytes, partition.begin);
+        table->cache->Decode(bytes, partition.begin, Storage::DecodingType::ASSIGN);
+        table->iterations[server] = iteration;
+    }
+    table->cv.notify_all();
+}
+
+void Client::ServerUpdate(Hostid server, Tableid id, const Bytes& bytes, int iteration) {
+    auto& table = tables_[id];
+    auto& partition = Lib::Placement()->GetPartitions(id).at(server);
+    {
+        std::lock_guard<std::mutex> lock(table->mu);
+        table->cache->Decode(bytes, partition.begin, Storage::DecodingType::UPDATE);
         if (table->iterations[server] < iteration) {
             table->iterations[server] = iteration;
         }
@@ -39,14 +55,14 @@ void Client::ServerAssign(Hostid server, Tableid id, const Bytes& bytes, int ite
     table->cv.notify_all();
 }
 
-void Client::Update(Tableid id, Storage& data) {
-    auto& table = tables_[id];
-    auto& partitions = Lib::Placement()->GetPartitions(id);
-    auto server_to_bytes = data.Encoding(partitions);
+void Client::Update(Tableid tableid, const Storage& data) {
+    auto& table = tables_[tableid];
+    auto& partitions = Lib::Placement()->GetPartitions(tableid);
+    auto server_to_bytes = data.Encode(partitions);
     for (auto& kv: server_to_bytes) {
         auto& server = kv.first;
         auto& bytes = kv.second;
-        Lib::Comm()->Update(server, id, bytes, iteration_);
+        Lib::Comm()->Update(server, tableid, bytes, iteration_);
     }
     int min = std::min_element(
             table->iterations.begin(), table->iterations.end(),
@@ -56,7 +72,7 @@ void Client::Update(Tableid id, Storage& data) {
             })->second;
     if (min < iteration_ - Lib::Staleness()) {
         for (auto& kv: partitions) {
-            Lib::Comm()->Pull(kv.first, id, iteration_);
+            Lib::Comm()->Pull(kv.first, tableid, iteration_);
         }
     }
 }
@@ -97,31 +113,28 @@ void Client::SyncServer() {
         auto& partitions = Lib::Placement()->GetPartitions(tableid);
         for (auto& kv: partitions) {
             Hostid server= kv.first;
-            Placement::Partition& partition = kv.second;
+            const Placement::Partition& partition = kv.second;
             if (server == Lib::ThisHost()) {
                 auto begin = partition.begin;
                 auto end = partition.end;
-                Lib::Comm()->CreateTable(table->config, end - begin);
+                Lib::Server()->CreateTable(table->config, end - begin);
             }
             table->iterations[server] = -1;
         }
     }
 }
+
 void Client::SyncClient() {
     if (Lib::ThisHost() == 0) {
         for (auto& kv: tables_) {
             Tableid tableid = kv.first;
             auto& table = kv.second;
-            auto server_to_bytes = table->cache->Encoding(Lib::Placement()->GetPartitions(tableid));
-            for (auto& kv: server_to_bytes) {
-                auto& server = kv.first;
-                auto& bytes = kv.second;
-                Lib::Comm()->ForceSync(server, tableid, bytes);
-            }
+            auto bytes = table->cache->Encode();
+            Assign(tableid, std::move(bytes));
         }
     }
 }
-void Client::ForceSync() {
+void Client::Start() {
     LOG(INFO) << "ForceSync";
     SyncPlacement();
     SyncServer();

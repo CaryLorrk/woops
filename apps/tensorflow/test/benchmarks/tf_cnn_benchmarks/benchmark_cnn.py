@@ -1119,7 +1119,7 @@ class BenchmarkCNN(object):
         done_fn = global_step_watcher.done
       loop_start_time = time.time()
 
-      tf.woops_force_sync()
+      tf.woops_start()
       while not done_fn():
         if local_step == 0:
           log_fn('Done warm up')

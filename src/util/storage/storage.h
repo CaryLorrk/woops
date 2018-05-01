@@ -12,14 +12,14 @@ namespace woops
 class Storage
 {
 public:
+    enum class DecodingType {ASSIGN, UPDATE};
     virtual ~Storage() {}
     virtual void Zerofy() = 0;
-    virtual const void* Serialize() const = 0;
-    virtual std::map<Hostid, Bytes> Encoding(const Placement::Partitions& partitions) const = 0;
-    virtual void Decoding(const Bytes& bytes, size_t offset = 0, size_t size = -1) = 0;
-    virtual size_t GetSize() const = 0;
-    virtual void Assign(const void* data, size_t offset = 0, size_t size = -1) = 0;
-    virtual void Update(const void* delta) = 0;
+    virtual Bytes Encode() const = 0;
+    virtual std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const = 0;
+    virtual void Decode(const Bytes& bytes, size_t offset = 0, DecodingType = DecodingType::UPDATE) = 0;
+    virtual void Assign(const Bytes& bytes, size_t offset = 0) = 0;
+    virtual void Update(const Bytes& bytes, size_t offset = 0) = 0;
     virtual std::string ToString() const = 0;
 };
     

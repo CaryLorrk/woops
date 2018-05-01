@@ -12,10 +12,10 @@
 namespace woops
 {
 struct ServerTable {
-    std::unique_ptr<Storage> storage;
+    std::vector<std::unique_ptr<Storage>> storages;
     size_t size;
     size_t element_size;
-    std::vector<int> iterations;
+    std::vector<Iteration> iterations;
     std::mutex mu;
     std::condition_variable cv;
 }; 

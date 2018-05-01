@@ -16,11 +16,15 @@ void CreateTable(const TableConfig& config){
     Lib::CreateTable(config);
 }
 
-void LocalAssign(Tableid id, const void* data) {
+void Assign(Tableid id, const Bytes& data) {
+    Lib::Assign(id, data);
+}
+
+void LocalAssign(Tableid id, const Bytes& data) {
     Lib::LocalAssign(id, data);
 }
 
-void Update(Tableid id, Storage& data){
+void Update(Tableid id, const Storage& data){
     Lib::Update(id, data);
 }
 
@@ -32,8 +36,8 @@ void Sync(Tableid id) {
     Lib::Sync(id);
 }
 
-void ForceSync() {
-    Lib::ForceSync();
+void Start() {
+    Lib::Start();
 }
 
 std::string ToString() {

@@ -5,7 +5,7 @@
 namespace woops
 {
 
-Placement::Partitions& Placement::GetPartitions(Tableid id) {
+const Placement::Partitions& Placement::GetPartitions(Tableid id) {
     return table_to_partitions_[id];
 }
 
@@ -15,12 +15,10 @@ std::string Placement::ToString() {
     for (auto& kv: table_to_partitions_) {
         Tableid tableid = kv.first;
         Partitions& partitions = kv.second;
-        //ss << "table: " << tableid << '\n';
         for (auto& kv: partitions) {
             Hostid hostid = kv.first;
             Partition& partition = kv.second;
             ss << tableid << ";" << hostid << ";" << partition.end - partition.begin << "\n";
-            //ss << hostid << " " << partition.begin << " " << partition.end << '\n';
         }
         
     }
@@ -28,7 +26,7 @@ std::string Placement::ToString() {
 }
 
 template<typename T>
-void str_bytes_append(std::string& ret, T data) {
+void Placement::str_bytes_append(std::string& ret, T data) {
     ret.append((char*)&data, sizeof(data));
 }
 
@@ -51,7 +49,7 @@ std::string Placement::Serialize() {
 }
 
 template<typename T>
-void str_decode(const char** pp, T& ret) {
+void Placement::str_decode(const char** pp, T& ret) {
     ret = *((T*)(*pp));
     *pp = *pp + sizeof(T);
 }

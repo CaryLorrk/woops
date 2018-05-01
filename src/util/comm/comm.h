@@ -6,13 +6,13 @@
 #include <condition_variable>
 #include <grpc++/grpc++.h>
 
-#include "ps_service_server.h"
+#include "comm_server.h"
 #include "util/config/woops_config.h"
 
 namespace woops
 {
 
-class PsServiceServer;
+class CommServer;
 class WoopsConfig;
 class TableConfig;
 class Comm
@@ -21,21 +21,20 @@ public:
     Comm();
 
     void Initialize();
-    void CreateTable(const TableConfig& config, size_t size);
     void Update(Hostid server, Tableid id, std::string& data, int iteration);
     void Pull(Hostid server, Tableid id, int iteration);
-    void Push(Hostid client, Tableid id, const void* data, size_t size, int iteration);
-    void ForceSync(Hostid host, Tableid id, std::string& data);
+    void Push(Hostid client, Tableid id, Bytes bytes, int iteration);
+    void Assign(Hostid host, Tableid id, Bytes bytes);
     void SyncPlacement();
 
     void Barrier();
 
     ~Comm();
 private:
-    std::unique_ptr<PsServiceServer> service_;
+    std::unique_ptr<CommServer> service_;
     std::unique_ptr<grpc::Server> rpc_server_;
     std::thread server_thread_;
-    std::vector<std::unique_ptr<rpc::PsService::Stub>> stubs_;
+    std::vector<std::unique_ptr<rpc::Comm::Stub>> stubs_;
 
     std::unique_ptr<std::mutex[]> update_streams_mu_;
     std::vector<std::unique_ptr<grpc::ClientContext>> update_ctxs_;
@@ -59,7 +58,7 @@ private:
 
     void finish_();
 
-friend class PsServiceServer;
+friend class CommServer;
 };
 
     

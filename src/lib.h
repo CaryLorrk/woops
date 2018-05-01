@@ -20,11 +20,12 @@ public:
     static void InitializeFromFile(const std::string& filename);
 
     static void CreateTable(const TableConfig& config);
-    static void LocalAssign(int id, const void* data);
-    static void Update(int id, Storage& data);
+    static void Assign(Tableid id, const Bytes& bytes);
+    static void LocalAssign(int id, const Bytes& bytes);
+    static void Update(int id, const Storage& data);
     static void Clock();
     static void Sync(int id);
-    static void ForceSync();
+    static void Start();
     static std::string ToString();
 
     static woops::Comm* Comm() {

@@ -21,14 +21,20 @@ public:
 
     virtual void Decision() = 0;
 
-    Partitions& GetPartitions(Tableid id);
+    const Partitions& GetPartitions(Tableid id);
     std::string Serialize();
     void Deserialize(const std::string& data);
     std::string ToString();
 protected:
     std::map<Tableid, Partitions> table_to_partitions_;
-};    
 
+    template<typename T>
+    void str_bytes_append(std::string& ret, T data);
+
+    template<typename T>
+    void str_decode(const char** pp, T& ret);
+
+};
 } /* woops */ 
 
 #endif /* end of include guard: WOOPS_PLACEMENT_PLACEMENT_H_ */

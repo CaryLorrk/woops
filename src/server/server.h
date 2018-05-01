@@ -10,19 +10,17 @@
 namespace woops
 {
 class Comm;
-class PsServiceServer;
 class Server
 {
 public:
-    void Assign(int id, const void* data);
-    void Update(int client, int id, const void* delta, size_t len, int iteration);
-    void Update(int client, int id, const Bytes& bytes, int iteration);
+    //void Assign(Tableid tableid, const Bytes& bytes);
+    void Update(Hostid client, Tableid tableid, const Bytes& bytes, Iteration iteration);
     void CreateTable(const TableConfig& config, size_t size);
-    const void* GetParameter(int id, int& iteration, size_t& size);
+    Bytes GetParameter(Hostid client, Tableid tableid, Iteration& iteration);
     std::string ToString();
 
 private:
-    std::map<int, std::unique_ptr<ServerTable>> tables_;
+    std::map<Hostid, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
 }; 
 } /* woops */ 

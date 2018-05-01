@@ -23,13 +23,15 @@ class Client
 {
 public:
     void CreateTable(const TableConfig& config);
-    void LocalAssign(Tableid id, const void* data);
-    //void ServerAssign(Hostid server, Tableid id, const void* data, int iteration);
-    void ServerAssign(Hostid server, Tableid id,const Bytes& bytes, int iteration);
-    void Update(Tableid id, Storage& data);
+    void Assign(Tableid id, const Bytes& bytes);
+    void LocalAssign(Tableid id, const Bytes& bytes);
+    void Update(Tableid id, const Storage& data);
     void Clock();
     void Sync(Tableid id);
-    void ForceSync();
+    void Start();
+
+    void ServerAssign(Hostid server, Tableid id,const Bytes& bytes, int iteration);
+    void ServerUpdate(Hostid server, Tableid id,const Bytes& bytes, int iteration);
     std::string ToString();
 
     Client();

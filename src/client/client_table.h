@@ -5,10 +5,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <grpc++/grpc++.h>
-
 #include "util/storage/storage.h"
-#include "util/protobuf/ps_service.pb.h"
 #include "util/config/table_config.h"
 
 namespace woops

@@ -4,12 +4,12 @@
 #include <map>
 #include <string>
 
-#include "util/protobuf/ps_service.grpc.pb.h"
+#include "util/protobuf/comm.grpc.pb.h"
 #include "util/storage/storage.h"
 
 namespace woops
 {
-class PsServiceServer final: public rpc::PsService::Service
+class CommServer final: public rpc::Comm::Service
 {
 public:
     grpc::Status CheckAlive(grpc::ServerContext* ctx,
@@ -24,8 +24,8 @@ public:
     grpc::Status BarrierNotify(grpc::ServerContext* ctx,
             const rpc::BarrierNotifyRequest* req, rpc::BarrierNotifyResponse* res) override;
 
-    grpc::Status ForceSync(grpc::ServerContext* ctx,
-            const rpc::ForceSyncRequest* req, rpc::ForceSyncResponse* res) override;
+    grpc::Status Assign(grpc::ServerContext* ctx,
+            const rpc::AssignRequest* req, rpc::AssignResponse* res) override;
 
     grpc::Status Update(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;

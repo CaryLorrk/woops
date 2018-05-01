@@ -10,7 +10,7 @@
 namespace woops
 {
 class Storage;
-using StorageConstructor = std::function<std::unique_ptr<Storage>(size_t size)> ;
+using StorageConstructor = std::function<std::unique_ptr<Storage>()> ;
 
 struct TableConfig {
     Tableid id;
