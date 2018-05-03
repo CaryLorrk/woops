@@ -24,47 +24,11 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     table->iterations.resize(Lib::NumHosts(), -1);
 }
 
-//void Server::Assign(Tableid tableid, const Bytes& bytes) {
-    //auto& table = tables_[tableid];
-    //std::lock_guard<std::mutex> lock(table->mu);
-    //table->storages[id]->Assign(bytes);
-//}
-
-static std::string string_to_hex(const std::string& input)
-{
-    static const char* const lut = "0123456789ABCDEF";
-    size_t len = input.length();
-
-    std::string output;
-    output.reserve(2 * len);
-    for (size_t i = 0; i < len; ++i)
-    {
-        const unsigned char c = input[i];
-        output.push_back(lut[c >> 4]);
-        output.push_back(lut[c & 15]);
-    }
-    return output;
-}
-
-static std::string chars_to_hex(const char* input, size_t len)
-{
-    static const char* const lut = "0123456789ABCDEF";
-
-    std::string output;
-    output.reserve(2 * len);
-    for (size_t i = 0; i < len; ++i)
-    {
-        const unsigned char c = input[i];
-        output.push_back(lut[c >> 4]);
-        output.push_back(lut[c & 15]);
-    }
-    return output;
-}
-
-void Server::Update(Hostid client, Tableid tableid, const Bytes& bytes, Iteration iteration) {
-    auto& table = tables_[tableid];
+void Server::Update(Hostid client, Tableid id, const Bytes& bytes, Iteration iteration) {
+    auto& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
     for (int i = 0; i < Lib::NumHosts(); ++i) {
+        if (client == Lib::ThisHost()) continue;
         table->storages[i]->Decode(bytes);
     }
     if (table->iterations[client] < iteration) {
@@ -76,8 +40,8 @@ void Server::Update(Hostid client, Tableid tableid, const Bytes& bytes, Iteratio
     }
 }
 
-Bytes Server::GetParameter(Hostid client, Tableid tableid, Iteration& iteration) {
-    auto& table = tables_[tableid];
+Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
+    auto& table = tables_[id];
     auto& storage = table->storages[client];
     Iteration min;
     std::unique_lock<std::mutex> lock(table->mu); 
@@ -93,8 +57,13 @@ Bytes Server::GetParameter(Hostid client, Tableid tableid, Iteration& iteration)
 
 std::string Server::ToString() {
     std::stringstream ss;
-    for(auto& i: tables_) {
-        //ss << i.first << ": " << i.second->storage->ToString() << std::endl; 
+    for(auto& kv: tables_) {
+        ss << kv.first << ": \n";
+        auto& table = kv.second;
+        for (size_t client = 0; client < table->storages.size(); ++client) {
+            ss << "client: " << client << " iteration: " << table->iterations[client] << "\n";
+            ss << kv.second->storages[client]->ToString() << std::endl; 
+        }
     }
     return ss.str();
 }

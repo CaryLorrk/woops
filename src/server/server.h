@@ -13,14 +13,13 @@ class Comm;
 class Server
 {
 public:
-    //void Assign(Tableid tableid, const Bytes& bytes);
-    void Update(Hostid client, Tableid tableid, const Bytes& bytes, Iteration iteration);
+    void Update(Hostid client, Tableid id, const Bytes& bytes, Iteration iteration);
     void CreateTable(const TableConfig& config, size_t size);
-    Bytes GetParameter(Hostid client, Tableid tableid, Iteration& iteration);
+    Bytes GetParameter(Hostid client, Tableid id, Iteration& iteration);
     std::string ToString();
 
 private:
-    std::map<Hostid, std::unique_ptr<ServerTable>> tables_;
+    std::map<Tableid, std::unique_ptr<ServerTable>> tables_;
     std::mutex tables_mu_;
 }; 
 } /* woops */ 

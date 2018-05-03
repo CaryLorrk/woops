@@ -31,7 +31,7 @@ void SortedGreedyPlacement::Decision() {
     for (auto& config: Lib::TableConfigs()) {
         auto size = sizes.top();
         sizes.pop();
-        table_to_partitions_[config.id][size.first] = Partition{0, config.size};
+        table_to_partitions_[config.id][size.first] = Partition{0, static_cast<ParamIndex>(config.size)};
         size.second += config.size * config.element_size;
         sizes.push(size);
     }

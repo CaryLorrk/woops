@@ -13,12 +13,12 @@ std::string Placement::ToString() {
     std::stringstream ss;
     ss << "table;host;size\n";
     for (auto& kv: table_to_partitions_) {
-        Tableid tableid = kv.first;
+        Tableid id = kv.first;
         Partitions& partitions = kv.second;
         for (auto& kv: partitions) {
             Hostid hostid = kv.first;
             Partition& partition = kv.second;
-            ss << tableid << ";" << hostid << ";" << partition.end - partition.begin << "\n";
+            ss << id << ";" << hostid << ";" << partition.end - partition.begin << "\n";
         }
         
     }
@@ -33,9 +33,9 @@ void Placement::str_bytes_append(std::string& ret, T data) {
 std::string Placement::Serialize() {
     std::string ret;
     for(auto& kv: table_to_partitions_) {
-        Tableid tableid = kv.first;
+        Tableid id = kv.first;
         Partitions partitions = kv.second;
-        str_bytes_append(ret, tableid);
+        str_bytes_append(ret, id);
         for(auto& kv: partitions) {
             Hostid server = kv.first;
             Partition partition = kv.second;
@@ -58,8 +58,8 @@ void Placement::Deserialize(const std::string& data) {
     table_to_partitions_.clear();
     const char* p = data.data();
     while (p < data.data()+data.size()) {
-        Tableid tableid;
-        str_decode(&p, tableid);
+        Tableid id;
+        str_decode(&p, id);
         Hostid server;
         Partitions partitions;
         Partition partition;
@@ -70,7 +70,7 @@ void Placement::Deserialize(const std::string& data) {
             str_decode(&p, partition.end);
             partitions[server] = partition;
         }
-        table_to_partitions_[tableid] = partitions;
+        table_to_partitions_[id] = partitions;
     }
 }
 

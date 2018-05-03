@@ -9,6 +9,7 @@ WOOPS_CXXFLAGS := -O0 \
            -Wall \
 		   -Wextra \
 		   -pthread \
+		   -DDEBUG \
 		   -g \
 		   -fsanitize=address \
 		   -fsanitize=leak \

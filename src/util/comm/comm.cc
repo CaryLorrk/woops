@@ -13,7 +13,8 @@ namespace woops
 Comm::Comm():
     barrier_cnt_(0) {}
 
-void Comm::Update(int server, int id, std::string& data, int iteration) {
+void Comm::Update(Hostid server, Tableid id,
+        std::string& data, Iteration iteration) {
     if (server == Lib::ThisHost()) {
         Lib::Server()->Update(Lib::ThisHost(), id, data, iteration);
     } else {
@@ -26,7 +27,7 @@ void Comm::Update(int server, int id, std::string& data, int iteration) {
     }
 }
 
-void Comm::Pull(int server, int id, int iteration) {
+void Comm::Pull(Hostid server, Tableid id, Iteration iteration) {
     rpc::PullRequest req;
     req.set_tableid(id);
     req.set_iteration(iteration);
@@ -34,7 +35,7 @@ void Comm::Pull(int server, int id, int iteration) {
     pull_streams_[server]->Write(req);
 }
 
-void Comm::Push(int client, int id, Bytes bytes, int iteration) {
+void Comm::Push(Hostid client, Tableid id, Bytes bytes, Iteration iteration) {
     rpc::PushRequest req;
     req.set_tableid(id);
     req.set_parameter(std::move(bytes));
@@ -43,13 +44,12 @@ void Comm::Push(int client, int id, Bytes bytes, int iteration) {
     push_streams_[client]->Write(req);
 }
 
-void Comm::Assign(Hostid host, Tableid id, Bytes bytes) {
+void Comm::Assign(Hostid host, Tableid id, Bytes data) {
     rpc::AssignRequest req;
     req.set_tableid(id);
-    req.set_parameter(std::move(bytes));
+    req.set_parameter(std::move(data));
 
     grpc::ClientContext ctx;
-    ctx.AddMetadata("from_host", std::to_string(Lib::ThisHost()));
     rpc::AssignResponse res;
     stubs_[host]->Assign(&ctx, req, &res);
 }
@@ -100,7 +100,7 @@ void Comm::Initialize() {
     update_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
     pull_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
     push_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
-    for (size_t server = 0; server < Lib::NumHosts(); server++) {
+    for (Hostid server = 0; server < Lib::NumHosts(); server++) {
         auto update_ctx = std::make_unique<grpc::ClientContext>();
         update_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
         update_streams_.push_back(stubs_[server]->Update(update_ctx.get()));
@@ -127,7 +127,7 @@ void Comm::Barrier() {
         barrier_cv_.wait(lock, [this]{return barrier_cnt_ >= Lib::NumHosts() - 1;});
         barrier_cnt_ = 0;
 
-        for (size_t host = 1; host < Lib::NumHosts(); ++host) {
+        for (Hostid host = 1; host < Lib::NumHosts(); ++host) {
             grpc::ClientContext ctx;
             rpc::BarrierNotifyRequest req;
             rpc::BarrierNotifyResponse res;
@@ -159,14 +159,17 @@ void Comm::SyncPlacement() {
 
 void Comm::finish_() {
     if (Lib::ThisHost() == 0) {
-        for (size_t host = Lib::NumHosts() - 1; host >= 0; --host) {
+        for (Hostid host = 1; host < Lib::NumHosts(); ++host) {
             grpc::ClientContext ctx;
             rpc::FinishRequest req;
             rpc::FinishResponse res;
             stubs_[host]->Finish(&ctx, req, &res);
         }
     }
-    server_thread_.join();
+
+    if (Lib::ThisHost() != 0) {
+        server_thread_.join();
+    }
 }
 
 Comm::~Comm() {

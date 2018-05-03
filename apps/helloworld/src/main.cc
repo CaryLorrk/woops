@@ -38,8 +38,9 @@ int main()
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        woops::Bytes b(reinterpret_cast<char*>(a.data()), a.size() * sizeof(float));
-        woops::Assign(j, b);
+        StorageType sa(SIZE);
+        sa.Assign(a.data());
+        woops::Assign(j, sa);
     }
     std::cout << woops::ToString() << std::endl;
     std::fill(a.begin(), a.end(), 1);
@@ -49,6 +50,7 @@ int main()
             woops::Sync(j);
             StorageType sa(SIZE);
             sa.Assign(a.data());
+            woops::LocalUpdate(j, sa);
             woops::Update(j, sa);
         }
         woops::Clock();

@@ -15,68 +15,44 @@
 
 namespace woops
 {
-grpc::Status CommServer::CheckAlive(grpc::ServerContext* ctx,
-        const rpc::CheckAliveRequest* req,
+grpc::Status CommServer::CheckAlive(
+        MAYBE_UNUSED grpc::ServerContext* ctx,
+        MAYBE_UNUSED const rpc::CheckAliveRequest* req,
         rpc::CheckAliveResponse* res){
     res->set_status(true);
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Finish(grpc::ServerContext* ctx,
-        const rpc::FinishRequest* req, rpc::FinishResponse* res) {
+grpc::Status CommServer::Finish(
+        MAYBE_UNUSED grpc::ServerContext* ctx,
+        MAYBE_UNUSED const rpc::FinishRequest* req,
+        MAYBE_UNUSED rpc::FinishResponse* res) {
     std::abort();
 }
 
-grpc::Status CommServer::SyncPlacement(grpc::ServerContext* ctx,
-        const rpc::SyncPlacementRequest* req, rpc::SyncPlacementResponse* res) {
+grpc::Status CommServer::SyncPlacement(
+        MAYBE_UNUSED grpc::ServerContext* ctx,
+        MAYBE_UNUSED const rpc::SyncPlacementRequest* req,
+        rpc::SyncPlacementResponse* res) {
     res->set_data(Lib::Placement()->Serialize());
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::BarrierNotify(grpc::ServerContext* ctx,
-        const rpc::BarrierNotifyRequest* req,
-        rpc::BarrierNotifyResponse* res){
+grpc::Status CommServer::BarrierNotify(
+        MAYBE_UNUSED grpc::ServerContext* ctx,
+        MAYBE_UNUSED const rpc::BarrierNotifyRequest* req,
+        MAYBE_UNUSED rpc::BarrierNotifyResponse* res){
     Lib::Comm()->barrier_notified_();
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Assign(grpc::ServerContext* ctx,
-        const rpc::AssignRequest* req, rpc::AssignResponse* res) {
-    int host = std::stoi(ctx->client_metadata().find("from_host")->second.data());
+grpc::Status CommServer::Assign(
+        MAYBE_UNUSED grpc::ServerContext* ctx,
+        const rpc::AssignRequest* req,
+        MAYBE_UNUSED rpc::AssignResponse* res) {
     int id = req->tableid();
-    Lib::Client()->ServerAssign(host, id, req->parameter(), -1);
+    Lib::Client()->ServerAssign(id, req->parameter());
     return grpc::Status::OK;
-}
-
-static std::string string_to_hex(const std::string& input)
-{
-    static const char* const lut = "0123456789ABCDEF";
-    size_t len = input.length();
-
-    std::string output;
-    output.reserve(2 * len);
-    for (size_t i = 0; i < len; ++i)
-    {
-        const unsigned char c = input[i];
-        output.push_back(lut[c >> 4]);
-        output.push_back(lut[c & 15]);
-    }
-    return output;
-}
-
-static std::string chars_to_hex(const char* input, size_t len)
-{
-    static const char* const lut = "0123456789ABCDEF";
-
-    std::string output;
-    output.reserve(2 * len);
-    for (size_t i = 0; i < len; ++i)
-    {
-        const unsigned char c = input[i];
-        output.push_back(lut[c >> 4]);
-        output.push_back(lut[c & 15]);
-    }
-    return output;
 }
 
 grpc::Status CommServer::Update(grpc::ServerContext* ctx,
@@ -96,7 +72,7 @@ grpc::Status CommServer::Pull(grpc::ServerContext* ctx,
     rpc::PullRequest req;
     std::mutex stream_mu;
     while(stream->Read(&req)) {
-        std::thread t([this, req, &stream_mu, &stream, client] {
+        std::thread t([req, &stream_mu, &stream, client] {
             int id = req.tableid();
             int iteration = req.iteration();
             Bytes parameter = Lib::Server()->GetParameter(client, id, iteration);

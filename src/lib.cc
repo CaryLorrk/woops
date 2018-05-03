@@ -54,17 +54,22 @@ void Lib::CreateTable(const TableConfig& config) {
     lib.client_->CreateTable(config);
 }
 
-void Lib::Assign(Tableid id, const Bytes& bytes) {
+void Lib::Assign(Tableid id, const Storage& data) {
     Lib& lib = Get();
-    lib.client_->Assign(id, bytes);
+    lib.client_->Assign(id, data);
 }
 
-void Lib::LocalAssign(int id, const Bytes& bytes) {
+void Lib::LocalAssign(Tableid id, const Storage& data) {
     Lib& lib = Get();
-    lib.client_->LocalAssign(id, bytes);
+    lib.client_->LocalAssign(id, data);
 }
 
-void Lib::Update(int id, const Storage& data) {
+void Lib::LocalUpdate(Tableid id, const Storage& data) {
+    Lib& lib = Get();
+    lib.client_->LocalUpdate(id, data);
+}
+
+void Lib::Update(Tableid id, const Storage& data) {
     Lib& lib = Get();
     lib.client_->Update(id, data);
 }
@@ -74,7 +79,7 @@ void Lib::Clock() {
     lib.client_->Clock();
 }
 
-void Lib::Sync(int id) {
+void Lib::Sync(Tableid id) {
     Lib& lib = Get();
     lib.client_->Sync(id); 
 }

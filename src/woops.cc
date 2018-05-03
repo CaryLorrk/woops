@@ -16,12 +16,16 @@ void CreateTable(const TableConfig& config){
     Lib::CreateTable(config);
 }
 
-void Assign(Tableid id, const Bytes& data) {
+void Assign(Tableid id, const Storage& data) {
     Lib::Assign(id, data);
 }
 
-void LocalAssign(Tableid id, const Bytes& data) {
+void LocalAssign(Tableid id, const Storage& data) {
     Lib::LocalAssign(id, data);
+}
+
+void LocalUpdate(Tableid id, const Storage& data) {
+    Lib::LocalUpdate(id, data);
 }
 
 void Update(Tableid id, const Storage& data){

@@ -21,10 +21,10 @@ public:
     Comm();
 
     void Initialize();
-    void Update(Hostid server, Tableid id, std::string& data, int iteration);
-    void Pull(Hostid server, Tableid id, int iteration);
-    void Push(Hostid client, Tableid id, Bytes bytes, int iteration);
-    void Assign(Hostid host, Tableid id, Bytes bytes);
+    void Update(Hostid server, Tableid id, std::string& data, Iteration iteration);
+    void Pull(Hostid server, Tableid id, Iteration iteration);
+    void Push(Hostid client, Tableid id, Bytes bytes, Iteration iteration);
+    void Assign(Hostid host, Tableid id, Bytes data);
     void SyncPlacement();
 
     void Barrier();

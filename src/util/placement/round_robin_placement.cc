@@ -7,7 +7,7 @@ namespace woops
 void RoundRobinPlacement::Decision() {
     int last = 0;
     for (auto& config: Lib::TableConfigs()) {
-        table_to_partitions_[config.id][last] = Partition{0, config.size};
+        table_to_partitions_[config.id][last] = Partition{0, static_cast<ParamIndex>(config.size)};
         last = (last + 1) % Lib::NumHosts();
     }
 }

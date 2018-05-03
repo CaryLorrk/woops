@@ -20,11 +20,12 @@ public:
     static void InitializeFromFile(const std::string& filename);
 
     static void CreateTable(const TableConfig& config);
-    static void Assign(Tableid id, const Bytes& bytes);
-    static void LocalAssign(int id, const Bytes& bytes);
-    static void Update(int id, const Storage& data);
+    static void Assign(Tableid id, const Storage& data);
+    static void LocalAssign(Tableid id, const Storage& data);
+    static void LocalUpdate(Tableid id, const Storage& data);
+    static void Update(Tableid id, const Storage& data);
     static void Clock();
-    static void Sync(int id);
+    static void Sync(Tableid id);
     static void Start();
     static std::string ToString();
 
@@ -58,17 +59,17 @@ public:
         return lib.woops_config_.port;
     }
 
-    static int NumHosts() {
+    static Hostid NumHosts() {
         Lib& lib = Get();
-        return lib.woops_config_.hosts.size();
+        return static_cast<Hostid>(lib.woops_config_.hosts.size());
     }
 
-    static int ThisHost() {
+    static Hostid ThisHost() {
         Lib& lib = Get();
         return lib.woops_config_.this_host;
     }
 
-    static int Staleness() {
+    static Iteration Staleness() {
         Lib& lib = Get();
         return lib.woops_config_.staleness;
     }
