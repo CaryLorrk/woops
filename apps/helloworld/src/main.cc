@@ -38,9 +38,7 @@ int main()
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        StorageType sa(SIZE);
-        sa.Assign(a.data());
-        woops::Assign(j, sa);
+        woops::Assign(j, StorageType(a));
     }
     std::cout << woops::ToString() << std::endl;
     std::fill(a.begin(), a.end(), 1);
@@ -48,8 +46,7 @@ int main()
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
-            StorageType sa(SIZE);
-            sa.Assign(a.data());
+            StorageType sa(a);
             woops::LocalUpdate(j, sa);
             woops::Update(j, sa);
         }

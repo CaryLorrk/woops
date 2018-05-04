@@ -2,6 +2,7 @@
 #define WOOPS_WOOPS_H_
 
 #include <string>
+#include <type_traits>
 
 #include "util/typedef.h"
 #include "util/config/table_config.h"
@@ -12,9 +13,9 @@ namespace woops
 void Initialize(const WoopsConfig& config); 
 void InitializeFromFile(const std::string& filename);
 void CreateTable(const TableConfig& config);
-void Assign(Tableid id, const Storage& data);
 void LocalAssign(Tableid id, const Storage& data);
 void LocalUpdate(Tableid id, const Storage& data);
+void Assign(Tableid id, const Storage& data);
 void Update(Tableid id, const Storage& data);
 void Clock();
 void Sync(Tableid id);

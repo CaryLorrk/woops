@@ -14,26 +14,35 @@ template<typename T>
 class DenseStorage: public Storage
 {
 public:
-    DenseStorage(int size);
+    DenseStorage(size_t size);
+    DenseStorage(const std::vector<T>& data);
+    DenseStorage(std::vector<T>&& data);
 
     void Zerofy() override;
     Bytes Encode() const override;
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const override;
     void Decode(const Bytes& bytes, size_t offset, DecodingType decoding_type = DecodingType::UPDATE) override;
-    void Assign(const T* data, size_t size = 0, size_t offset = 0);
-    void Assign(const Bytes& bytes, size_t offset = 0) override;
-    void Update(const Bytes& bytes, size_t offset = 0) override;
     std::string ToString() const override;
 
 private:
     std::vector<T> data_;
     std::mutex mu_;
+
+    void assign(const T* data, size_t size = 0, size_t offset = 0);
+    void update(const T* delta, size_t size = 0, size_t offset = 0);
 };
 
 template<typename T>
-DenseStorage<T>::DenseStorage(int size):
-    data_(size)
-{
+DenseStorage<T>::DenseStorage(size_t size):data_(size) {}
+
+template<typename T>
+DenseStorage<T>::DenseStorage(const std::vector<T>& data) {
+    data_ = data;
+}
+
+template<typename T>
+DenseStorage<T>::DenseStorage(std::vector<T>&& data) {
+    data_ = std::move(data);
 }
 
 template<typename T>
@@ -63,12 +72,14 @@ std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& par
 
 template<typename T>
 void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset, DecodingType decoding_type) {
+    const T* data = reinterpret_cast<const T*>(bytes.data());
+    size_t size = bytes.size() / sizeof(T);
     switch (decoding_type) {
     case DecodingType::ASSIGN:
-        Assign(bytes, offset);
+        assign(data, size, offset);
         break;
     case DecodingType::UPDATE:
-        Update(bytes, offset);
+        update(data, size, offset);
         break;
     default:
         LOG(FATAL) << "Unknown decoding type.";
@@ -77,27 +88,16 @@ void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset, DecodingType dec
 }
 
 template<typename T>
-void DenseStorage<T>::Assign(const T* data, size_t size, size_t offset) {
+void DenseStorage<T>::assign(const T* data, size_t size, size_t offset) {
     std::lock_guard<std::mutex> lock(mu_);
-    if (size == 0) size = data_.size();
-    std::memcpy(&data_[offset], data, size * sizeof(T));
+    std::copy(data, data + size, std::next(data_.begin(), offset));
 }
 
 template<typename T>
-void DenseStorage<T>::Assign(const Bytes& bytes, size_t offset) {
+void DenseStorage<T>::update(const T* delta, size_t size, size_t offset) {
     std::lock_guard<std::mutex> lock(mu_);
-    const T* data = reinterpret_cast<const T*>(bytes.data());
-    std::memcpy(&data_[offset], data, bytes.size());
-}
-
-template<typename T>
-void DenseStorage<T>::Update(const Bytes& bytes, size_t offset) {
-    std::lock_guard<std::mutex> lock(mu_);
-    const T* delta = reinterpret_cast<const T*>(bytes.data());
-    size_t size = bytes.size() / sizeof(T);
-    for (size_t i = offset; i < offset + size; ++i) {
-        data_[i] += delta[i];
-    }
+    auto&& begin_it = std::next(data_.begin(), offset);
+    std::transform(delta, delta + size, begin_it, begin_it, std::plus<T>());
 }
 
 template<typename T>
