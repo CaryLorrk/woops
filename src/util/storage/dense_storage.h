@@ -27,7 +27,7 @@ public:
     void Update(const Storage& delta, size_t offset = 0) override;
     std::string ToString() const override;
 
-private:
+protected:
     std::vector<T> data_;
     mutable std::mutex mu_;
 

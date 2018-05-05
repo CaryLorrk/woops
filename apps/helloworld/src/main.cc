@@ -23,12 +23,15 @@ int main()
         table_config.size = SIZE;
         table_config.element_size = sizeof(float);
         table_config.server_storage_constructor = [](){
-                         return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
+            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
                        
         };
-        table_config.cache_constructor = [](){
-                         return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
+        table_config.client_storage_constructor = [](){
+            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
                        
+        };
+        table_config.apply_buffer_constructor = []() {
+            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
         };
         woops::CreateTable(table_config);
     }
