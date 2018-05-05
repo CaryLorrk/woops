@@ -25,13 +25,12 @@ public:
     void CreateTable(const TableConfig& config);
     void LocalAssign(Tableid id, const Storage& data);
     void LocalUpdate(Tableid id, const Storage& data);
-    void Assign(Tableid id, const Storage& data);
     void Update(Tableid id, const Storage& data);
     void Clock();
     void Sync(Tableid id);
     void Start();
 
-    void ServerAssign(Tableid id,const Bytes& bytes);
+    void ServerSyncStorage(Tableid id,const Bytes& bytes);
     void ServerUpdate(Hostid server, Tableid id,const Bytes& bytes, int iteration);
     std::string ToString();
 

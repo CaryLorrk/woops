@@ -6,7 +6,7 @@ service Comm {
     rpc Finish(FinishRequest) returns (FinishResponse) {}
     rpc BarrierNotify(BarrierNotifyRequest) returns (BarrierNotifyResponse) {}
     rpc SyncPlacement(SyncPlacementRequest) returns (SyncPlacementResponse) {}
-    rpc Assign(AssignRequest) returns (AssignResponse) {}
+    rpc SyncStorage(SyncStorageRequest) returns (SyncStorageResponse) {}
     rpc Update(stream UpdateRequest) returns (stream UpdateResponse) {}
     rpc Pull(stream PullRequest) returns (stream PullResponse) {}
     rpc Push(stream PushRequest) returns (stream PushResponse) {}
@@ -33,12 +33,12 @@ message BarrierNotifyRequest {}
 
 message BarrierNotifyResponse {}
 
-message AssignRequest {
+message SyncStorageRequest {
     int32 tableid = 1;
     bytes parameter = 2;
 }
 
-message AssignResponse {
+message SyncStorageResponse {
 }
 
 message UpdateRequest {

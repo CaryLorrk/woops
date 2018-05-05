@@ -46,12 +46,12 @@ grpc::Status CommServer::BarrierNotify(
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Assign(
+grpc::Status CommServer::SyncStorage(
         MAYBE_UNUSED grpc::ServerContext* ctx,
-        const rpc::AssignRequest* req,
-        MAYBE_UNUSED rpc::AssignResponse* res) {
+        const rpc::SyncStorageRequest* req,
+        MAYBE_UNUSED rpc::SyncStorageResponse* res) {
     int id = req->tableid();
-    Lib::Client()->ServerAssign(id, req->parameter());
+    Lib::Client()->ServerSyncStorage(id, req->parameter());
     return grpc::Status::OK;
 }
 

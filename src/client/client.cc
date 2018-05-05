@@ -34,12 +34,6 @@ void Client::LocalUpdate(Tableid id, const Storage& data) {
     table->cache->Update(data);
 }
 
-void Client::Assign(Tableid id, const Storage& data) {
-    for (Hostid hostid = 0; hostid < Lib::NumHosts(); ++hostid) {
-        Lib::Comm()->Assign(hostid, id, data.Encode());
-    }
-}
-
 void Client::Update(Tableid id, const Storage& data) {
     auto&& table = tables_[id];
     auto&& partitions = Lib::Placement()->GetPartitions(id);
@@ -99,11 +93,11 @@ std::string Client::ToString() {
     return ss.str();
 }
 
-void Client::ServerAssign(Tableid id, const Bytes& bytes) {
+void Client::ServerSyncStorage(Tableid id, const Bytes& bytes) {
     auto&& table = tables_[id];
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->cache->Decode(bytes, 0, Storage::DecodingType::ASSIGN);
+        table->cache->Sync(bytes);
     }
     table->cv.notify_all();
 }
@@ -113,7 +107,7 @@ void Client::ServerUpdate(Hostid server, Tableid id, const Bytes& bytes, int ite
     auto&& partition = Lib::Placement()->GetPartitions(id).at(server);
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->cache->Decode(bytes, partition.begin, Storage::DecodingType::UPDATE);
+        table->cache->Decode(bytes, partition.begin);
         if (table->iterations[server] < iteration) {
             table->iterations[server] = iteration;
         }
@@ -154,7 +148,10 @@ void Client::sync_client() {
         for (auto&& kv: tables_) {
             Tableid id = kv.first;
             auto&& table = kv.second;
-            Assign(id, *table->cache);
+            auto bytes = table->cache->Encode();
+            for (Hostid hostid = 1; hostid < Lib::NumHosts(); ++hostid) {
+                Lib::Comm()->SyncStorage(hostid, id, bytes);
+            }
         }
     }
 }

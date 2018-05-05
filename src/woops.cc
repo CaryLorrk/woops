@@ -16,10 +16,6 @@ void CreateTable(const TableConfig& config){
     Lib::CreateTable(config);
 }
 
-void Assign(Tableid id, const Storage& data) {
-    Lib::Assign(id, data);
-}
-
 void LocalAssign(Tableid id, const Storage& data) {
     Lib::LocalAssign(id, data);
 }

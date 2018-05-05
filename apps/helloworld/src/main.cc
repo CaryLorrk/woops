@@ -33,13 +33,13 @@ int main()
         woops::CreateTable(table_config);
     }
     std::vector<float> a(SIZE);
-    woops::Start();
     for (int j = 0; j < NUM_TABLE; ++j) {
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        woops::Assign(j, StorageType(a));
+        woops::LocalAssign(j, StorageType(a));
     }
+    woops::Start();
     std::cout << woops::ToString() << std::endl;
     std::fill(a.begin(), a.end(), 1);
     for(int i = 0; i < MAX_ITER; ++i) {

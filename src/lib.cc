@@ -54,11 +54,6 @@ void Lib::CreateTable(const TableConfig& config) {
     lib.client_->CreateTable(config);
 }
 
-void Lib::Assign(Tableid id, const Storage& data) {
-    Lib& lib = Get();
-    lib.client_->Assign(id, data);
-}
-
 void Lib::LocalAssign(Tableid id, const Storage& data) {
     Lib& lib = Get();
     lib.client_->LocalAssign(id, data);

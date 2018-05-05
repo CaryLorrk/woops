@@ -44,14 +44,14 @@ void Comm::Push(Hostid client, Tableid id, Bytes bytes, Iteration iteration) {
     push_streams_[client]->Write(req);
 }
 
-void Comm::Assign(Hostid host, Tableid id, Bytes data) {
-    rpc::AssignRequest req;
+void Comm::SyncStorage(Hostid host, Tableid id, Bytes data) {
+    rpc::SyncStorageRequest req;
     req.set_tableid(id);
     req.set_parameter(std::move(data));
 
     grpc::ClientContext ctx;
-    rpc::AssignResponse res;
-    stubs_[host]->Assign(&ctx, req, &res);
+    rpc::SyncStorageResponse res;
+    stubs_[host]->SyncStorage(&ctx, req, &res);
 }
 
 

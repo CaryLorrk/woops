@@ -18,10 +18,11 @@ public:
     DenseStorage(const std::vector<T>& data);
     DenseStorage(std::vector<T>&& data);
 
+    void Sync(const Bytes& bytes) override;
     void Zerofy() override;
     Bytes Encode() const override;
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const override;
-    void Decode(const Bytes& bytes, size_t offset, DecodingType decoding_type = DecodingType::UPDATE) override;
+    void Decode(const Bytes& bytes, size_t offset) override;
     void Assign(const Storage& data, size_t offset = 0) override;
     void Update(const Storage& delta, size_t offset = 0) override;
     std::string ToString() const override;
@@ -45,6 +46,13 @@ DenseStorage<T>::DenseStorage(const std::vector<T>& data) {
 template<typename T>
 DenseStorage<T>::DenseStorage(std::vector<T>&& data) {
     data_ = std::move(data);
+}
+
+template<typename T>
+void DenseStorage<T>::Sync(const Bytes& bytes) {
+    const T* data = reinterpret_cast<const T*>(bytes.data());
+    size_t size = bytes.size() / sizeof(T);
+    assign(data, size);
 }
 
 template<typename T>
@@ -73,31 +81,21 @@ std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& par
 }
 
 template<typename T>
-void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset, DecodingType decoding_type) {
+void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset) {
     const T* data = reinterpret_cast<const T*>(bytes.data());
     size_t size = bytes.size() / sizeof(T);
-    switch (decoding_type) {
-    case DecodingType::ASSIGN:
-        assign(data, size, offset);
-        break;
-    case DecodingType::UPDATE:
-        update(data, size, offset);
-        break;
-    default:
-        LOG(FATAL) << "Unknown decoding type.";
-
-    }
+    update(data, size, offset);
 }
 
 template<typename T>
 void DenseStorage<T>::Assign(const Storage& data, size_t offset) {
-    auto&& t_data = dynamic_cast<const DenseStorage<T>&>(data); 
+    auto&& t_data = reinterpret_cast<const DenseStorage<T>&>(data); 
     assign(t_data.data_.data(), t_data.data_.size(), offset);
 }
 
 template<typename T>
 void DenseStorage<T>::Update(const Storage& delta, size_t offset) {
-    auto&& t_delta = dynamic_cast<const DenseStorage<T>&>(delta); 
+    auto&& t_delta = reinterpret_cast<const DenseStorage<T>&>(delta); 
     update(t_delta.data_.data(), t_delta.data_.size(), offset);
 }
 

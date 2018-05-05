@@ -24,8 +24,8 @@ public:
     grpc::Status BarrierNotify(grpc::ServerContext* ctx,
             const rpc::BarrierNotifyRequest* req, rpc::BarrierNotifyResponse* res) override;
 
-    grpc::Status Assign(grpc::ServerContext* ctx,
-            const rpc::AssignRequest* req, rpc::AssignResponse* res) override;
+    grpc::Status SyncStorage(grpc::ServerContext* ctx,
+            const rpc::SyncStorageRequest* req, rpc::SyncStorageResponse* res) override;
 
     grpc::Status Update(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;

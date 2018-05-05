@@ -20,7 +20,6 @@ public:
     static void InitializeFromFile(const std::string& filename);
 
     static void CreateTable(const TableConfig& config);
-    static void Assign(Tableid id, const Storage& data);
     static void LocalAssign(Tableid id, const Storage& data);
     static void LocalUpdate(Tableid id, const Storage& data);
     static void Update(Tableid id, const Storage& data);
