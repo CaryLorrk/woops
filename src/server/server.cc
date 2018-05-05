@@ -14,7 +14,7 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
 
     table->storages.resize(Lib::NumHosts());
     for (int i = 0; i < Lib::NumHosts(); ++i) {
-        table->storages[i] = config.server_storage_constructor();
+        table->storages[i] = std::unique_ptr<Storage>(config.server_storage_constructor());
     }
 
     table->size = size;

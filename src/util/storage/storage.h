@@ -16,7 +16,7 @@ public:
     virtual void Sync(const Bytes& bytes) = 0;
     virtual void Zerofy() = 0;
     virtual Bytes Encode() const = 0;
-    virtual std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const = 0;
+    virtual std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) = 0;
     virtual void Decode(const Bytes& bytes, size_t offset = 0) = 0;
     virtual void Assign(const Storage& data, size_t offset = 0) = 0;
     virtual void Update(const Storage& delta, size_t offset = 0) = 0;

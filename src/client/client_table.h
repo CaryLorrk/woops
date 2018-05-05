@@ -15,6 +15,7 @@ struct ClientTable {
     std::unique_ptr<Storage> storage; 
     std::unique_ptr<Storage> apply_buffer;
     bool need_apply;
+    std::unique_ptr<Storage> transmit_buffer;
     size_t size;
     size_t element_size;
     std::mutex  mu;

@@ -18,10 +18,11 @@ void Client::CreateTable(const TableConfig& config) {
     auto&& table = pair.first->second;
     table->size = config.size;
     table->element_size = config.element_size;
-    table->storage = config.client_storage_constructor();
+    table->storage = std::unique_ptr<Storage>(config.client_storage_constructor());
     table->config = config;
-    table->apply_buffer = config.apply_buffer_constructor();
+    table->apply_buffer = std::unique_ptr<Storage>(config.apply_buffer_constructor());
     table->need_apply = false;
+    table->transmit_buffer = std::unique_ptr<Storage>(config.transmit_buffer_constructor());
 }
 
 void Client::LocalAssign(Tableid id, const Storage& data) {
@@ -38,29 +39,36 @@ void Client::LocalUpdate(Tableid id, const Storage& data) {
 
 void Client::Update(Tableid id, const Storage& data) {
     auto&& table = tables_[id];
-    auto&& partitions = Lib::Placement()->GetPartitions(id);
-    auto server_to_bytes = data.Encode(partitions);
-    for (auto&& kv: server_to_bytes) {
-        auto&& server = kv.first;
-        auto&& bytes = kv.second;
-        Lib::Comm()->Update(server, id, bytes, iteration_);
+    {
+        std::lock_guard<std::mutex> lock(table->mu);
+        table->transmit_buffer->Update(data);
+        if (table->need_apply) {
+            table->storage->Update(*table->apply_buffer);
+            table->need_apply = false;
+            table->apply_buffer->Zerofy();
+        }
     }
 
-    std::lock_guard<std::mutex> lock(table->mu);
-    if (table->need_apply) {
-        table->storage->Update(*table->apply_buffer);
-        table->need_apply = false;
-        table->apply_buffer->Zerofy();
-    }
-    int min = std::min_element(
-            table->iterations.begin(), table->iterations.end(),
-            [](ClientTable::Iterations::value_type& l,
-                ClientTable::Iterations::value_type& r) -> bool {
-                return l.second < r.second;
-            })->second;
-    if (min < iteration_ - Lib::Staleness()) {
-        for (auto&& kv: partitions) {
-            Lib::Comm()->Pull(kv.first, id, iteration_);
+    {
+        auto&& partitions = Lib::Placement()->GetPartitions(id);
+        std::lock_guard<std::mutex> lock(table->mu);
+        auto server_to_bytes = table->transmit_buffer->Encode(partitions);
+        for (auto&& kv: server_to_bytes) {
+            auto&& server = kv.first;
+            auto&& bytes = kv.second;
+            Lib::Comm()->Update(server, id, bytes, iteration_);
+        }
+
+        int min = std::min_element(
+                table->iterations.begin(), table->iterations.end(),
+                [](ClientTable::Iterations::value_type& l,
+                    ClientTable::Iterations::value_type& r) -> bool {
+                    return l.second < r.second;
+                })->second;
+        if (min < iteration_ - Lib::Staleness()) {
+            for (auto&& kv: partitions) {
+                Lib::Comm()->Pull(kv.first, id, iteration_);
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ public:
     void Sync(const Bytes& bytes) override;
     void Zerofy() override;
     Bytes Encode() const override;
-    std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const override;
+    std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) override;
     void Decode(const Bytes& bytes, size_t offset) override;
     void Assign(const Storage& data, size_t offset = 0) override;
     void Update(const Storage& delta, size_t offset = 0) override;
@@ -70,7 +70,7 @@ Bytes DenseStorage<T>::Encode() const {
 }
 
 template<typename T>
-std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& partitions) const {
+std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& partitions) {
     std::map<Hostid, Bytes> ret;
     for (auto&& server_part: partitions) {
         Hostid server = server_part.first;

@@ -10,7 +10,7 @@
 namespace woops
 {
 class Storage;
-using StorageConstructor = std::function<std::unique_ptr<Storage>()> ;
+using StorageConstructor = std::function<Storage*()> ;
 
 struct TableConfig {
     Tableid id;
@@ -19,6 +19,7 @@ struct TableConfig {
     StorageConstructor client_storage_constructor;
     StorageConstructor server_storage_constructor;
     StorageConstructor apply_buffer_constructor;
+    StorageConstructor transmit_buffer_constructor;
 };
 
 } /* woops */ 

@@ -8,7 +8,12 @@
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
 
-using StorageType = woops::DenseStorage<float>;
+#include "storage/client_storage.h"
+#include "storage/transmit_buffer.h"
+#include "storage/server_storage.h"
+#include "storage/apply_buffer.h"
+
+using Gradient = woops::DenseStorage<float>;
 
 constexpr int SIZE = 3;
 constexpr int NUM_TABLE = 3;
@@ -22,16 +27,18 @@ int main()
         table_config.id = i;
         table_config.size = SIZE;
         table_config.element_size = sizeof(float);
-        table_config.server_storage_constructor = [](){
-            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
+        table_config.client_storage_constructor = []() -> woops::Storage*{
+            return new woops::ClientStorage<float>(SIZE);
                        
         };
-        table_config.client_storage_constructor = [](){
-            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
-                       
+        table_config.transmit_buffer_constructor = []() {
+            return new woops::TransmitBuffer<float>(SIZE);
         };
-        table_config.apply_buffer_constructor = []() {
-            return std::unique_ptr<woops::Storage>(new StorageType(SIZE));
+        table_config.server_storage_constructor = []() -> woops::Storage*{
+            return new woops::ClientStorage<float>(SIZE);
+        };
+        table_config.apply_buffer_constructor = []() -> woops::Storage*{
+            return new woops::ApplyBuffer<float>(SIZE);
         };
         woops::CreateTable(table_config);
     }
@@ -40,7 +47,7 @@ int main()
         for (int i = 0; i < SIZE; ++i) {
             a[i] = j*SIZE + i;
         }
-        woops::LocalAssign(j, StorageType(a));
+        woops::LocalAssign(j, Gradient(a));
     }
     woops::Start();
     std::cout << woops::ToString() << std::endl;
@@ -49,7 +56,7 @@ int main()
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
-            StorageType sa(a);
+            Gradient sa(a);
             woops::LocalUpdate(j, sa);
             woops::Update(j, sa);
         }
