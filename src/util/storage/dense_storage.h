@@ -22,14 +22,16 @@ public:
     Bytes Encode() const override;
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) const override;
     void Decode(const Bytes& bytes, size_t offset, DecodingType decoding_type = DecodingType::UPDATE) override;
+    void Assign(const Storage& data, size_t offset = 0) override;
+    void Update(const Storage& delta, size_t offset = 0) override;
     std::string ToString() const override;
 
 private:
     std::vector<T> data_;
-    std::mutex mu_;
+    mutable std::mutex mu_;
 
-    void assign(const T* data, size_t size = 0, size_t offset = 0);
-    void update(const T* delta, size_t size = 0, size_t offset = 0);
+    void assign(const T* data, size_t size, size_t offset = 0);
+    void update(const T* delta, size_t size, size_t offset = 0);
 };
 
 template<typename T>
@@ -62,7 +64,7 @@ Bytes DenseStorage<T>::Encode() const {
 template<typename T>
 std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& partitions) const {
     std::map<Hostid, Bytes> ret;
-    for (auto& server_part: partitions) {
+    for (auto&& server_part: partitions) {
         Hostid server = server_part.first;
         const Placement::Partition& part = server_part.second;
         ret[server] = std::string{(char*)&data_[part.begin], (char*)&data_[part.end]};
@@ -85,6 +87,18 @@ void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset, DecodingType dec
         LOG(FATAL) << "Unknown decoding type.";
 
     }
+}
+
+template<typename T>
+void DenseStorage<T>::Assign(const Storage& data, size_t offset) {
+    auto&& t_data = dynamic_cast<const DenseStorage<T>&>(data); 
+    assign(t_data.data_.data(), t_data.data_.size(), offset);
+}
+
+template<typename T>
+void DenseStorage<T>::Update(const Storage& delta, size_t offset) {
+    auto&& t_delta = dynamic_cast<const DenseStorage<T>&>(delta); 
+    update(t_delta.data_.data(), t_delta.data_.size(), offset);
 }
 
 template<typename T>

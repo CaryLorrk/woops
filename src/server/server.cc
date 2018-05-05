@@ -9,13 +9,12 @@ namespace woops
 
 void Server::CreateTable(const TableConfig& config, size_t size) {
     std::lock_guard<std::mutex> lock(tables_mu_);
-    auto pair = tables_.emplace(config.id, std::make_unique<ServerTable>());
-    auto& table = pair.first->second;
+    auto&& pair = tables_.emplace(config.id, std::make_unique<ServerTable>());
+    auto&& table = pair.first->second;
 
     table->storages.resize(Lib::NumHosts());
     for (int i = 0; i < Lib::NumHosts(); ++i) {
         table->storages[i] = config.server_storage_constructor();
-        table->storages[i]->Zerofy();
     }
 
     table->size = size;
@@ -25,7 +24,7 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
 }
 
 void Server::Update(Hostid client, Tableid id, const Bytes& bytes, Iteration iteration) {
-    auto& table = tables_[id];
+    auto&& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
     for (int i = 0; i < Lib::NumHosts(); ++i) {
         if (client == Lib::ThisHost()) continue;
@@ -41,8 +40,8 @@ void Server::Update(Hostid client, Tableid id, const Bytes& bytes, Iteration ite
 }
 
 Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
-    auto& table = tables_[id];
-    auto& storage = table->storages[client];
+    auto&& table = tables_[id];
+    auto&& storage = table->storages[client];
     Iteration min;
     std::unique_lock<std::mutex> lock(table->mu); 
     table->cv.wait(lock, [this, &table, iteration, &min]{
@@ -57,9 +56,9 @@ Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
 
 std::string Server::ToString() {
     std::stringstream ss;
-    for(auto& kv: tables_) {
+    for(auto&& kv: tables_) {
         ss << kv.first << ": \n";
-        auto& table = kv.second;
+        auto&& table = kv.second;
         for (size_t client = 0; client < table->storages.size(); ++client) {
             ss << "client: " << client << " iteration: " << table->iterations[client] << "\n";
             ss << kv.second->storages[client]->ToString() << std::endl; 

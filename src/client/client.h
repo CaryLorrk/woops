@@ -23,9 +23,9 @@ class Client
 {
 public:
     void CreateTable(const TableConfig& config);
-    void Assign(Tableid id, const Storage& data);
     void LocalAssign(Tableid id, const Storage& data);
     void LocalUpdate(Tableid id, const Storage& data);
+    void Assign(Tableid id, const Storage& data);
     void Update(Tableid id, const Storage& data);
     void Clock();
     void Sync(Tableid id);
@@ -40,9 +40,9 @@ private:
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;
 
-    void SyncPlacement();
-    void SyncServer();
-    void SyncClient();
+    void sync_placement();
+    void sync_server();
+    void sync_client();
 
 }; /* woops */ 
 }

@@ -6,7 +6,7 @@ namespace woops
 {
 
 void UniformSplitPlacement::Decision() {
-    for(auto& config: Lib::TableConfigs()) {
+    for(auto&& config: Lib::TableConfigs()) {
         auto& partitions = table_to_partitions_[config.id];
         int div = config.size / Lib::NumHosts();
         int mod = config.size % Lib::NumHosts();

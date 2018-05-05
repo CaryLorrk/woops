@@ -75,7 +75,7 @@ void Comm::Initialize() {
     LOG(INFO) << "Check servers:";
     grpc::ChannelArguments channel_args;
     channel_args.SetInt("grpc.max_message_length", 100*1024*1024);
-    for (auto& host: Lib::Hosts()) {
+    for (auto&& host: Lib::Hosts()) {
         while(1) {
             auto stub = rpc::Comm::NewStub(grpc::CreateCustomChannel(
                             host+":"+Lib::Port(),

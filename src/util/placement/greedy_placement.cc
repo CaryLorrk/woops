@@ -22,7 +22,7 @@ void GreedyPlacement::Decision() {
     for (Hostid h = 0; h < Lib::NumHosts(); ++h) {
         sizes.emplace(h, 0);
     }
-    for (auto& config: Lib::TableConfigs()) {
+    for (auto&& config: Lib::TableConfigs()) {
         auto size = sizes.top();
         sizes.pop();
         table_to_partitions_[config.id][size.first] = Partition{0, static_cast<ParamIndex>(config.size)};
