@@ -8,10 +8,15 @@
 #include "util/storage/dense_storage.h"
 #include "util/logging.h"
 
-#include "storage/client_storage.h"
-#include "storage/transmit_buffer.h"
-#include "storage/server_storage.h"
-#include "storage/apply_buffer.h"
+//#include "storage/client_storage.h"
+//#include "storage/transmit_buffer.h"
+//#include "storage/server_storage.h"
+//#include "storage/apply_buffer.h"
+
+#include "storage/compress/client_storage.h"
+#include "storage/compress/transmit_buffer.h"
+#include "storage/compress/server_storage.h"
+#include "storage/compress/apply_buffer.h"
 
 using Gradient = woops::DenseStorage<float>;
 
