@@ -35,7 +35,7 @@ int main()
             return new woops::TransmitBuffer<float>(SIZE);
         };
         table_config.server_storage_constructor = []() -> woops::Storage*{
-            return new woops::ClientStorage<float>(SIZE);
+            return new woops::ServerStorage<float>(SIZE);
         };
         table_config.apply_buffer_constructor = []() -> woops::Storage*{
             return new woops::ApplyBuffer<float>(SIZE);

@@ -114,17 +114,16 @@ void Client::ServerSyncStorage(Tableid id, const Bytes& bytes) {
     auto&& table = tables_[id];
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->storage->Sync(bytes);
+        table->storage->Deserialize(bytes);
     }
     table->cv.notify_all();
 }
 
 void Client::ServerUpdate(Hostid server, Tableid id, const Bytes& bytes, int iteration) {
     auto&& table = tables_[id];
-    auto&& partition = Lib::Placement()->GetPartitions(id).at(server);
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->apply_buffer->Decode(bytes, partition.begin);
+        table->apply_buffer->Decode(bytes, Lib::Placement()->GetPartitions(id).at(server));
         table->need_apply = true;
         if (table->iterations[server] < iteration) {
             table->iterations[server] = iteration;
@@ -166,7 +165,7 @@ void Client::sync_client() {
         for (auto&& kv: tables_) {
             Tableid id = kv.first;
             auto&& table = kv.second;
-            auto bytes = table->storage->Encode();
+            auto bytes = table->storage->Serialize();
             for (Hostid hostid = 1; hostid < Lib::NumHosts(); ++hostid) {
                 Lib::Comm()->SyncStorage(hostid, id, bytes);
             }

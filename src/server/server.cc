@@ -27,8 +27,7 @@ void Server::Update(Hostid client, Tableid id, const Bytes& bytes, Iteration ite
     auto&& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
     for (int i = 0; i < Lib::NumHosts(); ++i) {
-        if (client == Lib::ThisHost()) continue;
-        table->storages[i]->Decode(bytes);
+        table->storages[i]->Decode(client, bytes);
     }
     if (table->iterations[client] < iteration) {
         table->iterations[client] = iteration;
@@ -44,7 +43,7 @@ Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
     auto&& storage = table->storages[client];
     Iteration min;
     std::unique_lock<std::mutex> lock(table->mu); 
-    table->cv.wait(lock, [this, &table, iteration, &min]{
+    table->cv.wait(lock, [&table, iteration, &min]{
         min = *std::min_element(table->iterations.begin(), table->iterations.end());
         return min >= iteration - Lib::Staleness();
     });

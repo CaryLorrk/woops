@@ -18,19 +18,22 @@ public:
     DenseStorage(const std::vector<T>& data);
     DenseStorage(std::vector<T>&& data);
 
-    void Sync(const Bytes& bytes) override;
     void Zerofy() override;
-    Bytes Encode() const override;
+    Bytes Serialize() const override;
+    void Deserialize(const Bytes& bytes) override;
+    Bytes Encode() override;
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) override;
-    void Decode(const Bytes& bytes, size_t offset) override;
-    void Assign(const Storage& data, size_t offset = 0) override;
-    void Update(const Storage& delta, size_t offset = 0) override;
+    void Decode(Hostid host, const Bytes& bytes) override;
+    void Decode(const Bytes& bytes, const Placement::Partition& partition) override;
+    void Assign(const Storage& data) override;
+    void Update(const Storage& delta) override;
     std::string ToString() const override;
 
 protected:
     std::vector<T> data_;
     mutable std::mutex mu_;
 
+    void zerofy();
     void assign(const T* data, size_t size, size_t offset = 0);
     void update(const T* delta, size_t size, size_t offset = 0);
 };
@@ -49,65 +52,80 @@ DenseStorage<T>::DenseStorage(std::vector<T>&& data) {
 }
 
 template<typename T>
-void DenseStorage<T>::Sync(const Bytes& bytes) {
+void DenseStorage<T>::Zerofy() {
+    std::lock_guard<std::mutex> lock(mu_);
+    zerofy();
+}
+
+template<typename T>
+Bytes DenseStorage<T>::Serialize() const {
+    std::lock_guard<std::mutex> lock(mu_);
+    return Bytes{(Byte*)data_.data(), data_.size() * sizeof(T)};
+}
+
+template<typename T>
+void DenseStorage<T>::Deserialize(const Bytes& bytes) {
+    std::lock_guard<std::mutex> lock(mu_);
     const T* data = reinterpret_cast<const T*>(bytes.data());
     size_t size = bytes.size() / sizeof(T);
     assign(data, size);
 }
 
 template<typename T>
-void DenseStorage<T>::Zerofy() {
+Bytes DenseStorage<T>::Encode() {
+    Bytes ret;
+    LOG(FATAL) << "Unimplemented";
+    return ret;
+}
+
+template<typename T>
+std::map<Hostid, Bytes> DenseStorage<T>::Encode(
+        MAYBE_UNUSED const Placement::Partitions& partitions) {
+    std::map<Hostid, Bytes> ret;
+    LOG(FATAL) << "Unimplemented";
+    return ret;
+}
+
+template<typename T>
+void DenseStorage<T>::Decode(
+        MAYBE_UNUSED Hostid host,
+        MAYBE_UNUSED const Bytes& bytes) {
+    LOG(FATAL) << "Unimplemented";
+}
+
+template<typename T>
+void DenseStorage<T>::Decode(
+        MAYBE_UNUSED const Bytes& bytes,
+        MAYBE_UNUSED const Placement::Partition& partition) {
+    LOG(FATAL) << "Unimplemented";
+}
+
+template<typename T>
+void DenseStorage<T>::Assign(const Storage& data) {
+    auto&& t_data = reinterpret_cast<const DenseStorage<T>&>(data); 
     std::lock_guard<std::mutex> lock(mu_);
+    assign(t_data.data_.data(), t_data.data_.size());
+}
+
+template<typename T>
+void DenseStorage<T>::Update(const Storage& delta) {
+    auto&& t_delta = reinterpret_cast<const DenseStorage<T>&>(delta); 
+    std::lock_guard<std::mutex> lock(mu_);
+    update(t_delta.data_.data(), t_delta.data_.size());
+}
+
+template<typename T>
+void DenseStorage<T>::zerofy() {
     std::fill(data_.begin(), data_.end(), 0);
 }
 
 template<typename T>
-Bytes DenseStorage<T>::Encode() const {
-    int byte_size = data_.size() * sizeof(T);
-    Bytes ret(byte_size, 0);
-    memcpy(&ret[0], data_.data(), byte_size);
-    return ret;
-}
-
-template<typename T>
-std::map<Hostid, Bytes> DenseStorage<T>::Encode(const Placement::Partitions& partitions) {
-    std::map<Hostid, Bytes> ret;
-    for (auto&& server_part: partitions) {
-        Hostid server = server_part.first;
-        const Placement::Partition& part = server_part.second;
-        ret[server] = std::string{(char*)&data_[part.begin], (char*)&data_[part.end]};
-    }
-    return ret;
-}
-
-template<typename T>
-void DenseStorage<T>::Decode(const Bytes& bytes, size_t offset) {
-    const T* data = reinterpret_cast<const T*>(bytes.data());
-    size_t size = bytes.size() / sizeof(T);
-    update(data, size, offset);
-}
-
-template<typename T>
-void DenseStorage<T>::Assign(const Storage& data, size_t offset) {
-    auto&& t_data = reinterpret_cast<const DenseStorage<T>&>(data); 
-    assign(t_data.data_.data(), t_data.data_.size(), offset);
-}
-
-template<typename T>
-void DenseStorage<T>::Update(const Storage& delta, size_t offset) {
-    auto&& t_delta = reinterpret_cast<const DenseStorage<T>&>(delta); 
-    update(t_delta.data_.data(), t_delta.data_.size(), offset);
-}
-
-template<typename T>
 void DenseStorage<T>::assign(const T* data, size_t size, size_t offset) {
-    std::lock_guard<std::mutex> lock(mu_);
     std::copy(data, data + size, std::next(data_.begin(), offset));
 }
 
 template<typename T>
 void DenseStorage<T>::update(const T* delta, size_t size, size_t offset) {
-    std::lock_guard<std::mutex> lock(mu_);
     auto&& begin_it = std::next(data_.begin(), offset);
     std::transform(delta, delta + size, begin_it, begin_it, std::plus<T>());
 }
