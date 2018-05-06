@@ -31,7 +31,7 @@ int main()
             return new woops::ClientStorage<float>(SIZE);
                        
         };
-        table_config.transmit_buffer_constructor = []() {
+        table_config.transmit_buffer_constructor = []() -> woops::Storage* {
             return new woops::TransmitBuffer<float>(SIZE);
         };
         table_config.server_storage_constructor = []() -> woops::Storage*{
@@ -56,9 +56,7 @@ int main()
         std::cout << "iteration: " << i << std::endl;
         for (int j = 0; j < NUM_TABLE; ++j) {
             woops::Sync(j);
-            Gradient sa(a);
-            woops::LocalUpdate(j, sa);
-            woops::Update(j, sa);
+            woops::Update(j, Gradient(a));
         }
         woops::Clock();
     }

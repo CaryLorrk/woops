@@ -110,6 +110,7 @@ void DenseStorage<T>::Assign(const Storage& data) {
 template<typename T>
 void DenseStorage<T>::Update(const Storage& delta) {
     auto&& t_delta = reinterpret_cast<const DenseStorage<T>&>(delta); 
+    std::lock_guard<std::mutex> delta_lock(t_delta.mu_);
     std::lock_guard<std::mutex> lock(mu_);
     update(t_delta.data_.data(), t_delta.data_.size());
 }

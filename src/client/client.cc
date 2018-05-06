@@ -31,12 +31,6 @@ void Client::LocalAssign(Tableid id, const Storage& data) {
     table->storage->Assign(data);
 }
 
-void Client::LocalUpdate(Tableid id, const Storage& data) {
-    auto&& table = tables_[id];
-    std::lock_guard<std::mutex> lock(table->mu);
-    table->storage->Update(data);
-}
-
 void Client::Update(Tableid id, const Storage& data) {
     auto&& table = tables_[id];
     {

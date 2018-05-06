@@ -20,10 +20,6 @@ void LocalAssign(Tableid id, const Storage& data) {
     Lib::LocalAssign(id, data);
 }
 
-void LocalUpdate(Tableid id, const Storage& data) {
-    Lib::LocalUpdate(id, data);
-}
-
 void Update(Tableid id, const Storage& data){
     Lib::Update(id, data);
 }

@@ -59,11 +59,6 @@ void Lib::LocalAssign(Tableid id, const Storage& data) {
     lib.client_->LocalAssign(id, data);
 }
 
-void Lib::LocalUpdate(Tableid id, const Storage& data) {
-    Lib& lib = Get();
-    lib.client_->LocalUpdate(id, data);
-}
-
 void Lib::Update(Tableid id, const Storage& data) {
     Lib& lib = Get();
     lib.client_->Update(id, data);

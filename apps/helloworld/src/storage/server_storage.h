@@ -21,7 +21,6 @@ public:
     void Decode(
             MAYBE_UNUSED Hostid host,
             const Bytes& bytes) override {
-        if (host == Lib::ThisHost()) return;
         const T* data = reinterpret_cast<const T*>(bytes.data());
         size_t size = bytes.size() / sizeof(T);
         std::lock_guard<std::mutex> lock(this->mu_);
