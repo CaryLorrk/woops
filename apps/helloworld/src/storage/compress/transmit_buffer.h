@@ -13,21 +13,23 @@ class TransmitBuffer: public DenseStorage<T>
 public:
     TransmitBuffer(size_t size): DenseStorage<T>(size) {}
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) override {
-        constexpr int COMPRESSION_RATIO = 100;
+        constexpr int COMPRESSION_RATIO = 2;
         std::lock_guard<std::mutex> lock(this->mu_);
         std::map<Hostid, Bytes> ret;
         std::vector<ParamIndex> index(this->data_.size());
         std::iota(index.begin(), index.end(), 0);
-        std::sort(index.begin(), index.end(), [this](const T& lhs, const T& rhs) {
+        auto&& middle = std::next(index.begin(),
+                (this->data_.size() + COMPRESSION_RATIO - 1) / COMPRESSION_RATIO);
+        std::partial_sort(index.begin(), middle, index.end(), [this](const T& lhs, const T& rhs) {
             auto&& data = this->data_;
             return std::abs(data[lhs]) > std::abs(data[rhs]);
         });
         
-        index.resize((this->data_.size() + COMPRESSION_RATIO - 1) / COMPRESSION_RATIO);
-        std::sort(index.begin(), index.end());
+        std::sort(index.begin(), middle);
 
         auto&& kv = partitions.begin();
-        for (auto&& idx : index) {
+        for (auto it = index.begin(); it != middle; ++it) {
+            const ParamIndex& idx = *it;
             T& val = this->data_[idx];
             while (idx >= kv->second.end) ++kv;
             Hostid server = kv->first;

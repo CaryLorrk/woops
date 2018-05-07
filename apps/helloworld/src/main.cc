@@ -13,10 +13,15 @@
 //#include "storage/server_storage.h"
 //#include "storage/apply_buffer.h"
 
-#include "storage/compress/client_storage.h"
-#include "storage/compress/transmit_buffer.h"
-#include "storage/compress/server_storage.h"
-#include "storage/compress/apply_buffer.h"
+//#include "storage/compress/client_storage.h"
+//#include "storage/compress/transmit_buffer.h"
+//#include "storage/compress/server_storage.h"
+//#include "storage/compress/apply_buffer.h"
+
+#include "storage/compress/both/client_storage.h"
+#include "storage/compress/both/transmit_buffer.h"
+#include "storage/compress/both/server_storage.h"
+#include "storage/compress/both/apply_buffer.h"
 
 using Gradient = woops::DenseStorage<float>;
 
