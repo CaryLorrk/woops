@@ -49,7 +49,6 @@ Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
     });
     iteration = min;
     Bytes ret = storage->Encode();
-    storage->Zerofy();
     return ret;
 }
 
