@@ -5,3 +5,6 @@
 	path = apps/tensorflow/tensorflow
 	url = https://github.com/CaryLorrk/tensorflow.git
 	branch = woops
+[submodule "apps/helloworld"]
+	path = apps/helloworld
+	url = git@github.com:carylorrk/woops-helloworld
