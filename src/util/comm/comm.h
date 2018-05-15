@@ -7,35 +7,36 @@
 #include <grpc++/grpc++.h>
 
 #include "comm_server.h"
-#include "util/config/woops_config.h"
 
 namespace woops
 {
 
 class CommServer;
-class WoopsConfig;
-class TableConfig;
 class Comm
 {
 public:
-    Comm();
-
     void Initialize();
-    void Update(Hostid server, Tableid id, std::string& data, Iteration iteration);
+    void Update(Hostid server, Tableid id, Iteration iteration, Bytes&& data);
     void Pull(Hostid server, Tableid id, Iteration iteration);
-    void Push(Hostid client, Tableid id, Bytes bytes, Iteration iteration);
-    void SyncStorage(Hostid host, Tableid id, Bytes data);
+    void Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes);
+    void SyncStorage(Hostid host, Tableid id, Bytes&& data);
     void SyncPlacement();
 
     void Barrier();
 
     ~Comm();
 private:
+    static constexpr size_t MAX_MESSAGE_SIZE = 100*1024*1024;
+    void build_rpc_server();
     std::unique_ptr<CommServer> service_;
     std::unique_ptr<grpc::Server> rpc_server_;
-    std::thread server_thread_;
+    std::thread rpc_server_thread_;
+    void rpc_server_func();
+
+    void create_stubs();
     std::vector<std::unique_ptr<rpc::Comm::Stub>> stubs_;
 
+    void create_streams();
     std::unique_ptr<std::mutex[]> update_streams_mu_;
     std::vector<std::unique_ptr<grpc::ClientContext>> update_ctxs_;
     std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::UpdateRequest, rpc::UpdateResponse>>> update_streams_;
@@ -48,15 +49,17 @@ private:
     std::unique_ptr<std::mutex[]> push_streams_mu_;
     std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PushRequest, rpc::PushResponse>>> push_streams_;
 
-    void server_thread_func_();
+    // finish
+    void finish_handler();
+    bool is_finish = false;
+    void finish();
 
     // Barrier
-    void barrier_notified_();
+    void barrier_notified();
     std::mutex barrier_mu_;
     std::condition_variable barrier_cv_;
-    int barrier_cnt_;
+    int barrier_cnt_ = 0;
 
-    void finish_();
 
 friend class CommServer;
 };

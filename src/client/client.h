@@ -22,6 +22,8 @@ namespace woops
 class Client
 {
 public:
+    Client();
+
     void CreateTable(const TableConfig& config);
     void LocalAssign(Tableid id, const Storage& data);
     void LocalUpdate(Tableid id, const Storage& data);
@@ -30,11 +32,10 @@ public:
     void Sync(Tableid id);
     void Start();
 
-    void ServerSyncStorage(Tableid id,const Bytes& bytes);
-    void ServerUpdate(Hostid server, Tableid id,const Bytes& bytes, int iteration);
+    void ServerSyncStorage(Tableid id, const Bytes& bytes);
+    void ServerUpdate(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes);
     std::string ToString();
 
-    Client();
 private:
     std::map<int, std::unique_ptr<ClientTable>> tables_;
     std::atomic<int> iteration_;

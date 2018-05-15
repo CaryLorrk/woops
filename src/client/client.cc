@@ -50,7 +50,7 @@ void Client::Update(Tableid id, const Storage& data) {
         for (auto&& kv: server_to_bytes) {
             auto&& server = kv.first;
             auto&& bytes = kv.second;
-            Lib::Comm()->Update(server, id, bytes, iteration_);
+            Lib::Comm()->Update(server, id, iteration_, std::move(bytes));
         }
 
         int min = std::min_element(
@@ -113,7 +113,7 @@ void Client::ServerSyncStorage(Tableid id, const Bytes& bytes) {
     table->cv.notify_all();
 }
 
-void Client::ServerUpdate(Hostid server, Tableid id, const Bytes& bytes, int iteration) {
+void Client::ServerUpdate(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes) {
     auto&& table = tables_[id];
     {
         std::lock_guard<std::mutex> lock(table->mu);
@@ -161,7 +161,7 @@ void Client::sync_client() {
             auto&& table = kv.second;
             auto bytes = table->storage->Serialize();
             for (Hostid hostid = 1; hostid < Lib::NumHosts(); ++hostid) {
-                Lib::Comm()->SyncStorage(hostid, id, bytes);
+                Lib::Comm()->SyncStorage(hostid, id, Bytes(bytes));
             }
         }
     }

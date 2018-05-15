@@ -2,6 +2,7 @@
 #define WOOPS_SERVER_SERVER_H_
 
 #include <string>
+#include <tuple>
 
 #include "util/config/table_config.h"
 #include "util/config/woops_config.h"
@@ -13,9 +14,9 @@ class Comm;
 class Server
 {
 public:
-    void Update(Hostid client, Tableid id, const Bytes& bytes, Iteration iteration);
+    void Update(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes);
     void CreateTable(const TableConfig& config, size_t size);
-    Bytes GetParameter(Hostid client, Tableid id, Iteration& iteration);
+    std::tuple<Iteration, Bytes> GetData(Hostid client, Tableid id, Iteration iteration);
     std::string ToString();
 
 private:

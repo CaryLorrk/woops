@@ -44,7 +44,7 @@ message SyncStorageResponse {
 message UpdateRequest {
     int32 tableid = 1;
     int32 iteration = 2;
-    bytes delta = 3;
+    bytes data = 3;
 }
 
 message UpdateResponse {
@@ -60,7 +60,7 @@ message PullResponse {}
 message PushRequest {
     int32 tableid = 1;
     int32 iteration = 2;
-    bytes parameter = 3;
+    bytes data = 3;
 }
 
 message PushResponse {}

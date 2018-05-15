@@ -13,8 +13,8 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     auto&& table = pair.first->second;
 
     table->storages.resize(Lib::NumHosts());
-    for (int i = 0; i < Lib::NumHosts(); ++i) {
-        table->storages[i] = std::unique_ptr<Storage>(config.server_storage_constructor());
+    for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
+        table->storages[host] = std::unique_ptr<Storage>(config.server_storage_constructor());
     }
 
     table->size = size;
@@ -23,22 +23,22 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     table->iterations.resize(Lib::NumHosts(), -1);
 }
 
-void Server::Update(Hostid client, Tableid id, const Bytes& bytes, Iteration iteration) {
+void Server::Update(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes) {
     auto&& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
-    for (int i = 0; i < Lib::NumHosts(); ++i) {
-        table->storages[i]->Decode(client, bytes);
+    for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
+        table->storages[host]->Decode(host, bytes);
     }
     if (table->iterations[client] < iteration) {
         table->iterations[client] = iteration;
     }
-    int min = *std::min_element(table->iterations.begin(), table->iterations.end());
+    Iteration min = *std::min_element(table->iterations.begin(), table->iterations.end());
     if (min >= iteration - Lib::Staleness()) {
         table->cv.notify_all();
     }
 }
 
-Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
+std::tuple<Iteration, Bytes> Server::GetData(Hostid client, Tableid id, Iteration iteration) {
     auto&& table = tables_[id];
     auto&& storage = table->storages[client];
     Iteration min;
@@ -47,9 +47,7 @@ Bytes Server::GetParameter(Hostid client, Tableid id, Iteration& iteration) {
         min = *std::min_element(table->iterations.begin(), table->iterations.end());
         return min >= iteration - Lib::Staleness();
     });
-    iteration = min;
-    Bytes ret = storage->Encode();
-    return ret;
+    return make_tuple(min, storage->Encode());
 }
 
 std::string Server::ToString() {
