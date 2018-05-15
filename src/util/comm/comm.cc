@@ -83,34 +83,45 @@ void Comm::rpc_server_func() {
 
 
 void Comm::Update(Hostid server, Tableid id,
-        Iteration iteration, Bytes&& data) {
+        Iteration iteration, Bytes&& bytes) {
     if (server == Lib::ThisHost()) {
-        Lib::Server()->Update(Lib::ThisHost(), id, iteration, data);
+        Lib::Server()->Update(Lib::ThisHost(), id, iteration, bytes);
     } else {
         rpc::UpdateRequest req;
         req.set_tableid(id);
         req.set_iteration(iteration);
-        req.set_data(std::move(data));
+        req.set_data(std::move(bytes));
         std::lock_guard<std::mutex> lock(update_streams_mu_[server]);
         update_streams_[server]->Write(req);
     }
 }
 
 void Comm::Pull(Hostid server, Tableid id, Iteration iteration) {
-    rpc::PullRequest req;
-    req.set_tableid(id);
-    req.set_iteration(iteration);
-    std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
-    pull_streams_[server]->Write(req);
+    if (server == Lib::ThisHost()) {
+        std::thread([this, server, id, iteration] {
+            auto data = Lib::Server()->GetData(Lib::ThisHost(), id, iteration);
+            Lib::Client()->ServerUpdate(Lib::ThisHost(), id, std::get<0>(data), std::get<1>(data));
+        }).detach();
+    } else {
+        rpc::PullRequest req;
+        req.set_tableid(id);
+        req.set_iteration(iteration);
+        std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
+        pull_streams_[server]->Write(req);
+    }
 }
 
 void Comm::Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
-    rpc::PushRequest req;
-    req.set_tableid(id);
-    req.set_data(std::move(bytes));
-    req.set_iteration(iteration);
-    std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
-    push_streams_[client]->Write(req);
+    if (client == Lib::ThisHost()) {
+        Lib::Client()->ServerUpdate(Lib::ThisHost(), id, iteration, bytes);
+    } else {
+        rpc::PushRequest req;
+        req.set_tableid(id);
+        req.set_data(std::move(bytes));
+        req.set_iteration(iteration);
+        std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
+        push_streams_[client]->Write(req);
+    }
 }
 
 void Comm::SyncStorage(Hostid host, Tableid id, Bytes&& data) {
@@ -168,7 +179,7 @@ void Comm::finish_handler() {
     }
 }
 
-void Comm::finish_() {
+void Comm::finish() {
     is_finish = true;
     for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
         if (host != Lib::ThisHost()) {

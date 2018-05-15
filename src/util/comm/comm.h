@@ -16,7 +16,7 @@ class Comm
 {
 public:
     void Initialize();
-    void Update(Hostid server, Tableid id, Iteration iteration, Bytes&& data);
+    void Update(Hostid server, Tableid id, Iteration iteration, Bytes&& bytes);
     void Pull(Hostid server, Tableid id, Iteration iteration);
     void Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes);
     void SyncStorage(Hostid host, Tableid id, Bytes&& data);

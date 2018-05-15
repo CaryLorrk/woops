@@ -43,7 +43,7 @@ grpc::Status CommServer::BarrierNotify(
         MAYBE_UNUSED grpc::ServerContext* ctx,
         MAYBE_UNUSED const rpc::BarrierNotifyRequest* req,
         MAYBE_UNUSED rpc::BarrierNotifyResponse* res){
-    Lib::Comm()->barrier_notified_();
+    Lib::Comm()->barrier_notified();
     return grpc::Status::OK;
 }
 
