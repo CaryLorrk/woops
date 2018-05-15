@@ -52,7 +52,7 @@ void Client::Update(Tableid id, const Storage& data) {
     for (auto&& kv: server_to_bytes) {
         auto&& server = kv.first;
         auto&& bytes = kv.second;
-        Lib::Comm()->Update(server, id, iteration_, std::move(bytes));
+        Lib::Comm()->ClientPush(server, id, iteration_, std::move(bytes));
     }
     Iteration min;
     {
@@ -66,7 +66,7 @@ void Client::Update(Tableid id, const Storage& data) {
     }
     if (min < iteration_ - Lib::Staleness()) {
         for (auto&& kv: partitions) {
-            Lib::Comm()->Pull(kv.first, id, iteration_);
+            Lib::Comm()->ClientPull(kv.first, id, iteration_);
         }
     }
 }

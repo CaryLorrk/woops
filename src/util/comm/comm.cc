@@ -56,24 +56,30 @@ void Comm::create_stubs() {
 }
 
 void Comm::create_streams() {
-    update_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
-    pull_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
-    push_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    client_push_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    client_pull_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    server_push_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
+    server_pull_streams_mu_ = std::make_unique<std::mutex[]>(Lib::NumHosts());
     for (Hostid server = 0; server < Lib::NumHosts(); server++) {
-        auto update_ctx = std::make_unique<grpc::ClientContext>();
-        update_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
-        update_streams_.push_back(stubs_[server]->Update(update_ctx.get()));
-        update_ctxs_.push_back(std::move(update_ctx));
-        
-        auto pull_ctx = std::make_unique<grpc::ClientContext>();
-        pull_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
-        pull_streams_.push_back(stubs_[server]->Pull(pull_ctx.get()));
-        pull_ctxs_.push_back(std::move(pull_ctx));
+        auto client_push_ctx = std::make_unique<grpc::ClientContext>();
+        client_push_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
+        client_push_streams_.push_back(stubs_[server]->ClientPush(client_push_ctx.get()));
+        client_push_ctxs_.push_back(std::move(client_push_ctx));
 
-        auto push_ctx = std::make_unique<grpc::ClientContext>();
-        push_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
-        push_streams_.push_back(stubs_[server]->Push(push_ctx.get()));
-        push_ctxs_.push_back(std::move(push_ctx));
+        auto client_pull_ctx = std::make_unique<grpc::ClientContext>();
+        client_pull_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
+        client_pull_streams_.push_back(stubs_[server]->ClientPull(client_pull_ctx.get()));
+        client_pull_ctxs_.push_back(std::move(client_pull_ctx));
+
+        auto server_push_ctx = std::make_unique<grpc::ClientContext>();
+        server_push_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
+        server_push_streams_.push_back(stubs_[server]->ServerPush(server_push_ctx.get()));
+        server_push_ctxs_.push_back(std::move(server_push_ctx));
+
+        auto server_pull_ctx = std::make_unique<grpc::ClientContext>();
+        server_pull_ctx->AddMetadata("from_host", std::to_string(Lib::ThisHost()));
+        server_pull_streams_.push_back(stubs_[server]->ServerPull(server_pull_ctx.get()));
+        server_pull_ctxs_.push_back(std::move(server_pull_ctx));
     }
 }
 
@@ -82,21 +88,21 @@ void Comm::rpc_server_func() {
 }
 
 
-void Comm::Update(Hostid server, Tableid id,
+void Comm::ClientPush(Hostid server, Tableid id,
         Iteration iteration, Bytes&& bytes) {
     if (server == Lib::ThisHost()) {
         Lib::Server()->Update(Lib::ThisHost(), id, iteration, bytes);
     } else {
-        rpc::UpdateRequest req;
+        rpc::PushRequest req;
         req.set_tableid(id);
         req.set_iteration(iteration);
         req.set_data(std::move(bytes));
-        std::lock_guard<std::mutex> lock(update_streams_mu_[server]);
-        update_streams_[server]->Write(req);
+        std::lock_guard<std::mutex> lock(client_push_streams_mu_[server]);
+        client_push_streams_[server]->Write(req);
     }
 }
 
-void Comm::Pull(Hostid server, Tableid id, Iteration iteration) {
+void Comm::ClientPull(Hostid server, Tableid id, Iteration iteration) {
     if (server == Lib::ThisHost()) {
         std::thread([this, server, id, iteration] {
             auto data = Lib::Server()->GetData(Lib::ThisHost(), id, iteration);
@@ -106,12 +112,12 @@ void Comm::Pull(Hostid server, Tableid id, Iteration iteration) {
         rpc::PullRequest req;
         req.set_tableid(id);
         req.set_iteration(iteration);
-        std::lock_guard<std::mutex> lock(pull_streams_mu_[server]);
-        pull_streams_[server]->Write(req);
+        std::lock_guard<std::mutex> lock(client_pull_streams_mu_[server]);
+        client_pull_streams_[server]->Write(req);
     }
 }
 
-void Comm::Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
+void Comm::ServerPush(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
     if (client == Lib::ThisHost()) {
         Lib::Client()->ServerUpdate(Lib::ThisHost(), id, iteration, bytes);
     } else {
@@ -119,9 +125,13 @@ void Comm::Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
         req.set_tableid(id);
         req.set_data(std::move(bytes));
         req.set_iteration(iteration);
-        std::lock_guard<std::mutex> lock(push_streams_mu_[client]);
-        push_streams_[client]->Write(req);
+        std::lock_guard<std::mutex> lock(server_push_streams_mu_[client]);
+        server_push_streams_[client]->Write(req);
     }
+}
+
+void Comm::ServerPull(Hostid client, Tableid id, Iteration iteration) {
+    LOG(INFO) << __FUNCTION__ << "Undefined.";
 }
 
 void Comm::SyncStorage(Hostid host, Tableid id, Bytes&& data) {

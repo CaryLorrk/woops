@@ -16,9 +16,10 @@ class Comm
 {
 public:
     void Initialize();
-    void Update(Hostid server, Tableid id, Iteration iteration, Bytes&& bytes);
-    void Pull(Hostid server, Tableid id, Iteration iteration);
-    void Push(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes);
+    void ClientPush(Hostid server, Tableid id, Iteration iteration, Bytes&& bytes);
+    void ClientPull(Hostid server, Tableid id, Iteration iteration);
+    void ServerPush(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes);
+    void ServerPull(Hostid client, Tableid id, Iteration iteration);
     void SyncStorage(Hostid host, Tableid id, Bytes&& data);
     void SyncPlacement();
 
@@ -37,17 +38,21 @@ private:
     std::vector<std::unique_ptr<rpc::Comm::Stub>> stubs_;
 
     void create_streams();
-    std::unique_ptr<std::mutex[]> update_streams_mu_;
-    std::vector<std::unique_ptr<grpc::ClientContext>> update_ctxs_;
-    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::UpdateRequest, rpc::UpdateResponse>>> update_streams_;
+    std::unique_ptr<std::mutex[]> client_push_streams_mu_;
+    std::vector<std::unique_ptr<grpc::ClientContext>> client_push_ctxs_;
+    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PushRequest, rpc::PushResponse>>> client_push_streams_;
 
-    std::vector<std::unique_ptr<grpc::ClientContext>> pull_ctxs_;
-    std::unique_ptr<std::mutex[]> pull_streams_mu_;
-    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PullRequest, rpc::PullResponse>>> pull_streams_;
+    std::unique_ptr<std::mutex[]> client_pull_streams_mu_;
+    std::vector<std::unique_ptr<grpc::ClientContext>> client_pull_ctxs_;
+    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PullRequest, rpc::PullResponse>>> client_pull_streams_;
 
-    std::vector<std::unique_ptr<grpc::ClientContext>> push_ctxs_;
-    std::unique_ptr<std::mutex[]> push_streams_mu_;
-    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PushRequest, rpc::PushResponse>>> push_streams_;
+    std::unique_ptr<std::mutex[]> server_push_streams_mu_;
+    std::vector<std::unique_ptr<grpc::ClientContext>> server_push_ctxs_;
+    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PushRequest, rpc::PushResponse>>> server_push_streams_;
+
+    std::unique_ptr<std::mutex[]> server_pull_streams_mu_;
+    std::vector<std::unique_ptr<grpc::ClientContext>> server_pull_ctxs_;
+    std::vector<std::unique_ptr<grpc::ClientReaderWriter<rpc::PullRequest, rpc::PullResponse>>> server_pull_streams_;
 
     // finish
     void finish_handler();

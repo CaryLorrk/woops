@@ -55,38 +55,50 @@ grpc::Status CommServer::SyncStorage(
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Update(grpc::ServerContext* ctx,
-        grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) {
+grpc::Status CommServer::ClientPush(grpc::ServerContext* ctx,
+        grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) {
     Hostid client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
-    rpc::UpdateRequest req;
+    rpc::PushRequest req;
     while (stream->Read(&req)) {
         Lib::Server()->Update(client, req.tableid(), req.iteration(), Bytes(std::move(req.data())));        
     }
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Pull(grpc::ServerContext* ctx,
+grpc::Status CommServer::ClientPull(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) {
-    int client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
+    Hostid client = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PullRequest req;
-    std::mutex stream_mu;
     while(stream->Read(&req)) {
         std::thread([req, client] {
             Hostid id = req.tableid();
             auto data = Lib::Server()->GetData(client, id, req.iteration());
-            Lib::Comm()->Push(client, id, std::get<0>(data), std::move(std::get<1>(data)));
+            Lib::Comm()->ServerPush(client, id, std::get<0>(data), std::move(std::get<1>(data)));
         }).detach();
         
     }
     return grpc::Status::OK;
 }
 
-grpc::Status CommServer::Push(grpc::ServerContext* ctx,
+grpc::Status CommServer::ServerPush(grpc::ServerContext* ctx,
         grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) {
-    int server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
+    Hostid server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
     rpc::PushRequest req;
     while(stream->Read(&req)) {
         Lib::Client()->ServerUpdate(server, req.tableid(), req.iteration(), Bytes(std::move(req.data())));
+    }
+    return grpc::Status::OK;
+}
+
+grpc::Status CommServer::ServerPull(grpc::ServerContext* ctx,
+        grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) {
+    Hostid server = std::stoi(ctx->client_metadata().find("from_host")->second.data());
+    rpc::PullRequest req;
+    while(stream->Read(&req)) {
+        std::thread([req, server] {
+            LOG(INFO) << __FUNCTION__ << "Undefined.";
+        }).detach();
+        
     }
     return grpc::Status::OK;
 }

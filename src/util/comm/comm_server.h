@@ -27,14 +27,17 @@ public:
     grpc::Status SyncStorage(grpc::ServerContext* ctx,
             const rpc::SyncStorageRequest* req, rpc::SyncStorageResponse* res) override;
 
-    grpc::Status Update(grpc::ServerContext* ctx,
-            grpc::ServerReaderWriter<rpc::UpdateResponse, rpc::UpdateRequest>* stream) override;
+    grpc::Status ClientPush(grpc::ServerContext* ctx,
+            grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) override;
 
-    grpc::Status Pull(grpc::ServerContext* ctx,
+    grpc::Status ClientPull(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
 
-    grpc::Status Push(grpc::ServerContext* ctx,
+    grpc::Status ServerPush(grpc::ServerContext* ctx,
             grpc::ServerReaderWriter<rpc::PushResponse, rpc::PushRequest>* stream) override;
+
+    grpc::Status ServerPull(grpc::ServerContext* ctx,
+            grpc::ServerReaderWriter<rpc::PullResponse, rpc::PullRequest>* stream) override;
 };
 } /* woops */ 
 
