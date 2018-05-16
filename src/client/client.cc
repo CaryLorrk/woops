@@ -18,7 +18,7 @@ void Client::CreateTable(const TableConfig& config) {
     auto&& table = pair.first->second;
     table->size = config.size;
     table->element_size = config.element_size;
-    table->storage = std::unique_ptr<Storage>(config.client_storage_constructor());
+    table->worker_storage = std::unique_ptr<Storage>(config.worker_storage_constructor());
     table->config = config;
     table->apply_buffer = std::unique_ptr<Storage>(config.apply_buffer_constructor());
     table->need_apply = false;
@@ -28,7 +28,7 @@ void Client::CreateTable(const TableConfig& config) {
 void Client::LocalAssign(Tableid id, const Storage& data) {
     auto&& table = tables_[id];
     std::lock_guard<std::mutex> lock(table->mu);
-    table->storage->Assign(data);
+    table->worker_storage->Assign(data);
 }
 
 void Client::Update(Tableid id, const Storage& data) {
@@ -36,39 +36,8 @@ void Client::Update(Tableid id, const Storage& data) {
     {
         std::lock_guard<std::mutex> lock(table->mu);
         table->transmit_buffer->Update(data);
-        if (table->need_apply) {
-            table->storage->Update(*table->apply_buffer);
-            table->need_apply = false;
-            table->apply_buffer->Zerofy();
-        }
     }
-
-    auto&& partitions = Lib::Placement()->GetPartitions(id);
-    std::map<Hostid, Bytes> server_to_bytes;
-    {
-        std::lock_guard<std::mutex> lock(table->mu);
-        server_to_bytes = table->transmit_buffer->Encode(partitions);
-    }
-    for (auto&& kv: server_to_bytes) {
-        auto&& server = kv.first;
-        auto&& bytes = kv.second;
-        Lib::Comm()->ClientPush(server, id, iteration_, std::move(bytes));
-    }
-    Iteration min;
-    {
-        std::lock_guard<std::mutex> lock(table->mu);
-        min = std::min_element(
-                table->iterations.begin(), table->iterations.end(),
-                [](ClientTable::Iterations::value_type& l,
-                    ClientTable::Iterations::value_type& r) -> bool {
-                    return l.second < r.second;
-                })->second;
-    }
-    if (min < iteration_ - Lib::Staleness()) {
-        for (auto&& kv: partitions) {
-            Lib::Comm()->ClientPull(kv.first, id, iteration_);
-        }
-    }
+    Lib::Consistency()->ClientUpdate(id, data, iteration_);
 }
 
 void Client::Clock() {
@@ -76,17 +45,7 @@ void Client::Clock() {
 }
 
 void Client::Sync(Tableid id) {
-    auto&& table = tables_[id];
-    std::unique_lock<std::mutex> lock(table->mu);
-    table->cv.wait(lock, [this, &table]{
-            int min = std::min_element(
-                    table->iterations.begin(), table->iterations.end(),
-                    [](ClientTable::Iterations::value_type& l,
-                        ClientTable::Iterations::value_type& r) -> bool {
-                        return l.second < r.second;
-                    })->second;
-            return min >= iteration_ - Lib::Staleness() - 1;
-    });
+    Lib::Consistency()->ClientSync(id, iteration_);
 }
 
 
@@ -103,21 +62,24 @@ std::string Client::ToString() {
     std::stringstream ss;
     ss << "Client: " << std::endl;    
     for (auto&& pair: tables_) {
-        ss << pair.first << ": " << pair.second->storage->ToString() << std::endl;
+        ss << pair.first << ": " << pair.second->worker_storage->ToString() << std::endl;
     }
     return ss.str();
 }
 
-void Client::ServerSyncStorage(Tableid id, const Bytes& bytes) {
+ClientTable& Client::GetTable(Tableid id) {
+    return *tables_[id].get();
+}
+void Client::SyncStorageHandler(Tableid id, const Bytes& bytes) {
     auto&& table = tables_[id];
     {
         std::lock_guard<std::mutex> lock(table->mu);
-        table->storage->Deserialize(bytes);
+        table->worker_storage->Deserialize(bytes);
     }
     table->cv.notify_all();
 }
 
-void Client::ServerUpdate(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes) {
+void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes) {
     auto&& table = tables_[id];
     {
         std::lock_guard<std::mutex> lock(table->mu);
@@ -127,7 +89,7 @@ void Client::ServerUpdate(Hostid server, Tableid id, Iteration iteration, const 
             table->iterations[server] = iteration;
         }
     }
-    table->cv.notify_all();
+    Lib::Consistency()->ServerPushHandler(server, id, iteration, bytes, iteration_);
 }
 
 void Client::sync_placement() {
@@ -163,7 +125,7 @@ void Client::sync_client() {
         for (auto&& kv: tables_) {
             Tableid id = kv.first;
             auto&& table = kv.second;
-            auto bytes = table->storage->Serialize();
+            auto bytes = table->worker_storage->Serialize();
             for (Hostid hostid = 1; hostid < Lib::NumHosts(); ++hostid) {
                 Lib::Comm()->SyncStorage(hostid, id, Bytes(bytes));
             }

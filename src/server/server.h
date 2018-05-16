@@ -14,10 +14,12 @@ class Comm;
 class Server
 {
 public:
-    void Update(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes);
+    void ClientPushHandler(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes);
     void CreateTable(const TableConfig& config, size_t size);
     std::tuple<Iteration, Bytes> GetData(Hostid client, Tableid id, Iteration iteration);
     std::string ToString();
+
+    ServerTable& GetTable(Tableid id);
 
 private:
     std::map<Tableid, std::unique_ptr<ServerTable>> tables_;

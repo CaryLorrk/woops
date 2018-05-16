@@ -91,7 +91,7 @@ void Comm::rpc_server_func() {
 void Comm::ClientPush(Hostid server, Tableid id,
         Iteration iteration, Bytes&& bytes) {
     if (server == Lib::ThisHost()) {
-        Lib::Server()->Update(Lib::ThisHost(), id, iteration, bytes);
+        Lib::Server()->ClientPushHandler(Lib::ThisHost(), id, iteration, bytes);
     } else {
         rpc::PushRequest req;
         req.set_tableid(id);
@@ -106,7 +106,7 @@ void Comm::ClientPull(Hostid server, Tableid id, Iteration iteration) {
     if (server == Lib::ThisHost()) {
         std::thread([this, server, id, iteration] {
             auto data = Lib::Server()->GetData(Lib::ThisHost(), id, iteration);
-            Lib::Client()->ServerUpdate(Lib::ThisHost(), id, std::get<0>(data), std::get<1>(data));
+            Lib::Comm()->ServerPush(Lib::ThisHost(), id, std::get<0>(data), std::get<1>(std::move(data)));
         }).detach();
     } else {
         rpc::PullRequest req;
@@ -119,7 +119,7 @@ void Comm::ClientPull(Hostid server, Tableid id, Iteration iteration) {
 
 void Comm::ServerPush(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
     if (client == Lib::ThisHost()) {
-        Lib::Client()->ServerUpdate(Lib::ThisHost(), id, iteration, bytes);
+        Lib::Client()->ServerPushHandler(Lib::ThisHost(), id, iteration, bytes);
     } else {
         rpc::PushRequest req;
         req.set_tableid(id);
@@ -130,7 +130,10 @@ void Comm::ServerPush(Hostid client, Tableid id, Iteration iteration, Bytes&& by
     }
 }
 
-void Comm::ServerPull(Hostid client, Tableid id, Iteration iteration) {
+void Comm::ServerPull(
+        MAYBE_UNUSED Hostid client,
+        MAYBE_UNUSED Tableid id,
+        MAYBE_UNUSED Iteration iteration) {
     LOG(INFO) << __FUNCTION__ << "Undefined.";
 }
 

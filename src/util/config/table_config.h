@@ -16,7 +16,7 @@ struct TableConfig {
     Tableid id;
     size_t size;
     size_t element_size;
-    StorageConstructor client_storage_constructor;
+    StorageConstructor worker_storage_constructor;
     StorageConstructor server_storage_constructor;
     StorageConstructor apply_buffer_constructor;
     StorageConstructor transmit_buffer_constructor;

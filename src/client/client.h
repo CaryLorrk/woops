@@ -32,13 +32,14 @@ public:
     void Sync(Tableid id);
     void Start();
 
-    void ServerSyncStorage(Tableid id, const Bytes& bytes);
-    void ServerUpdate(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes);
+    ClientTable& GetTable(Tableid id);
+    void SyncStorageHandler(Tableid id, const Bytes& bytes);
+    void ServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes);
     std::string ToString();
 
 private:
-    std::map<int, std::unique_ptr<ClientTable>> tables_;
-    std::atomic<int> iteration_;
+    std::map<Tableid, std::unique_ptr<ClientTable>> tables_;
+    std::atomic<Iteration> iteration_;
 
     void sync_placement();
     void sync_server();

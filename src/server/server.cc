@@ -23,31 +23,29 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     table->iterations.resize(Lib::NumHosts(), -1);
 }
 
-void Server::Update(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes) {
+void Server::ClientPushHandler(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes) {
     auto&& table = tables_[id];
-    std::lock_guard<std::mutex> lock(table->mu);
-    for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
-        table->storages[host]->Decode(host, bytes);
+    {
+        std::lock_guard<std::mutex> lock(table->mu);
+        for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
+            table->storages[host]->Decode(host, bytes);
+        }
+        if (table->iterations[client] < iteration) {
+            table->iterations[client] = iteration;
+        }
     }
-    if (table->iterations[client] < iteration) {
-        table->iterations[client] = iteration;
-    }
-    Iteration min = *std::min_element(table->iterations.begin(), table->iterations.end());
-    if (min >= iteration - Lib::Staleness()) {
-        table->cv.notify_all();
-    }
+    Lib::Consistency()->ClientPushHandler(client, id, iteration, bytes);
 }
 
 std::tuple<Iteration, Bytes> Server::GetData(Hostid client, Tableid id, Iteration iteration) {
     auto&& table = tables_[id];
     auto&& storage = table->storages[client];
-    Iteration min;
-    std::unique_lock<std::mutex> lock(table->mu); 
-    table->cv.wait(lock, [&table, iteration, &min]{
-        min = *std::min_element(table->iterations.begin(), table->iterations.end());
-        return min >= iteration - Lib::Staleness();
-    });
+    Iteration min = Lib::Consistency()->GetServerData(client, id, iteration);
     return make_tuple(min, storage->Encode());
+}
+
+ServerTable& Server::GetTable(Tableid id) {
+    return *tables_[id].get();
 }
 
 std::string Server::ToString() {
@@ -62,7 +60,5 @@ std::string Server::ToString() {
     }
     return ss.str();
 }
-
-
  
 } /* woops */ 

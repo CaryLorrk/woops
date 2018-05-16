@@ -12,7 +12,7 @@ namespace woops
 {
 struct ClientTable {
     using Iterations = std::map<Hostid, Iteration>;
-    std::unique_ptr<Storage> storage; 
+    std::unique_ptr<Storage> worker_storage; 
     std::unique_ptr<Storage> apply_buffer;
     bool need_apply;
     std::unique_ptr<Storage> transmit_buffer;

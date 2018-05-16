@@ -17,6 +17,8 @@
 #include "util/placement/greedy_placement.h"
 #include "util/placement/sorted_greedy_placement.h"
 
+#include "consistency/passive_ssp_consistency.h"
+
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
 
@@ -25,6 +27,7 @@ namespace woops
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.woops_config_ = config;
+    lib.consistency_ = std::make_unique<PassiveSSPConsistency>(config.staleness);
     lib.placement_ = std::make_unique<RoundRobinPlacement>();
     //lib.placement_ = std::make_unique<GreedyPlacement>();
     //lib.placement_ = std::make_unique<SortedGreedyPlacement>();

@@ -8,6 +8,7 @@
 #include "util/config/table_config.h"
 #include "util/comm/comm.h"
 #include "util/placement/placement.h"
+#include "consistency/consistency.h"
 #include "client/client.h"
 #include "server/server.h"
 
@@ -48,6 +49,11 @@ public:
         return lib.server_.get();
     }
 
+    static woops::Consistency* Consistency() {
+        Lib& lib = Get();
+        return lib.consistency_.get();
+    }
+
     static std::vector<std::string> Hosts() {
         Lib& lib = Get();
         return lib.woops_config_.hosts;
@@ -68,11 +74,6 @@ public:
         return lib.woops_config_.this_host;
     }
 
-    static Iteration Staleness() {
-        Lib& lib = Get();
-        return lib.woops_config_.staleness;
-    }
-
     static std::vector<woops::TableConfig>& TableConfigs() {
         Lib& lib = Get();
         return lib.table_configs_;
@@ -83,6 +84,7 @@ private:
     WoopsConfig woops_config_;
     std::vector<woops::TableConfig> table_configs_;
 
+    std::unique_ptr<woops::Consistency> consistency_;
     std::unique_ptr<woops::Placement> placement_;
     std::unique_ptr<woops::Client> client_;
     std::unique_ptr<woops::Server> server_;
