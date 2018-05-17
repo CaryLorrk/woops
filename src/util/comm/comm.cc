@@ -91,7 +91,7 @@ void Comm::rpc_server_func() {
 void Comm::ClientPush(Hostid server, Tableid id,
         Iteration iteration, Bytes&& bytes) {
     if (server == Lib::ThisHost()) {
-        Lib::Server()->ClientPushHandler(Lib::ThisHost(), id, iteration, bytes);
+        Lib::Server().ClientPushHandler(Lib::ThisHost(), id, iteration, bytes);
     } else {
         rpc::PushRequest req;
         req.set_tableid(id);
@@ -105,8 +105,8 @@ void Comm::ClientPush(Hostid server, Tableid id,
 void Comm::ClientPull(Hostid server, Tableid id, Iteration iteration) {
     if (server == Lib::ThisHost()) {
         std::thread([this, server, id, iteration] {
-            auto data = Lib::Server()->GetData(Lib::ThisHost(), id, iteration);
-            Lib::Comm()->ServerPush(Lib::ThisHost(), id, std::get<0>(data), std::get<1>(std::move(data)));
+            auto data = Lib::Server().GetData(Lib::ThisHost(), id, iteration);
+            Lib::Comm().ServerPush(Lib::ThisHost(), id, std::get<0>(data), std::get<1>(std::move(data)));
         }).detach();
     } else {
         rpc::PullRequest req;
@@ -119,7 +119,7 @@ void Comm::ClientPull(Hostid server, Tableid id, Iteration iteration) {
 
 void Comm::ServerPush(Hostid client, Tableid id, Iteration iteration, Bytes&& bytes) {
     if (client == Lib::ThisHost()) {
-        Lib::Client()->ServerPushHandler(Lib::ThisHost(), id, iteration, bytes);
+        Lib::Client().ServerPushHandler(Lib::ThisHost(), id, iteration, bytes);
     } else {
         rpc::PushRequest req;
         req.set_tableid(id);
@@ -183,7 +183,7 @@ void Comm::SyncPlacement() {
     rpc::SyncPlacementRequest req;
     rpc::SyncPlacementResponse res;
     stubs_[0]->SyncPlacement(&ctx, req, &res);
-    Lib::Placement()->Deserialize(res.data());
+    Lib::Placement().Deserialize(res.data());
 }
 
 void Comm::finish_handler() {

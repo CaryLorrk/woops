@@ -1,5 +1,5 @@
-#ifndef WOOPS_UTIL_PLACEMENT_GREEDY_PLACEMENT_H_
-#define WOOPS_UTIL_PLACEMENT_GREEDY_PLACEMENT_H_
+#ifndef WOOPS_UTIL_PLACEMENT_SORTED_GREEDY_PLACEMENT_H_
+#define WOOPS_UTIL_PLACEMENT_SORTED_GREEDY_PLACEMENT_H_
 
 #include "placement.h"
 
@@ -14,4 +14,5 @@ public:
 } /* woops */ 
 
 
-#endif /* end of include guard: WOOPS_UTIL_PLACEMENT_GREEDY_PLACEMENT_H_ */
+
+#endif /* end of include guard: WOOPS_UTIL_PLACEMENT_SORTED_GREEDY_PLACEMENT_H_ */

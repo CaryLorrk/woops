@@ -15,9 +15,10 @@
 #include "util/placement/uniform_split_placement.h"
 #include "util/placement/round_robin_placement.h"
 #include "util/placement/greedy_placement.h"
-#include "util/placement/sorted_greedy_placement.h"
 
 #include "consistency/passive_ssp_consistency.h"
+#include "consistency/aggressive_ssp_consistency.h"
+#include "consistency/adaptive_consistency.h"
 
 using google::protobuf::io::IstreamInputStream;
 using google::protobuf::TextFormat;
@@ -28,9 +29,10 @@ void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.woops_config_ = config;
     lib.consistency_ = std::make_unique<PassiveSSPConsistency>(config.staleness);
+    //lib.consistency_ = std::make_unique<AggressiveSSPConsistency>(config.staleness);
+    //lib.consistency_ = std::make_unique<AdaptiveConsistency>(config.staleness);
     lib.placement_ = std::make_unique<RoundRobinPlacement>();
     //lib.placement_ = std::make_unique<GreedyPlacement>();
-    //lib.placement_ = std::make_unique<SortedGreedyPlacement>();
     //lib.placement_ = std::make_unique<UniformSplitPlacement>();
     lib.client_ = std::make_unique<woops::Client>();
     lib.server_ = std::make_unique<woops::Server>();

@@ -29,29 +29,29 @@ public:
     static void Start();
     static std::string ToString();
 
-    static woops::Comm* Comm() {
+    static woops::Comm& Comm() {
         Lib& lib = Get();
-        return lib.comm_.get();
+        return *lib.comm_.get();
     }
 
-    static woops::Placement* Placement() {
+    static woops::Placement& Placement() {
         Lib& lib = Get();
-        return lib.placement_.get();
+        return *lib.placement_.get();
     }
 
-    static woops::Client* Client() {
+    static woops::Client& Client() {
         Lib& lib = Get();
-        return lib.client_.get();
+        return *lib.client_.get();
     }
 
-    static woops::Server* Server() {
+    static woops::Server& Server() {
         Lib& lib = Get();
-        return lib.server_.get();
+        return *lib.server_.get();
     }
 
-    static woops::Consistency* Consistency() {
+    static woops::Consistency& Consistency() {
         Lib& lib = Get();
-        return lib.consistency_.get();
+        return *lib.consistency_.get();
     }
 
     static std::vector<std::string> Hosts() {

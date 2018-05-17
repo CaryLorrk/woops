@@ -5,7 +5,7 @@
 
 namespace woops
 {
-class SortedGreedyPlacement: public Placement
+class GreedyPlacement: public Placement
 {
 public:
     void Decision() override;

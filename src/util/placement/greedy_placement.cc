@@ -1,5 +1,6 @@
 #include "greedy_placement.h"
 
+#include <algorithm>
 #include <queue>
 #include <utility>
 
@@ -8,6 +9,7 @@
 namespace woops
 {
 using Pair = std::pair<Hostid, size_t>;
+
 class PairComparator
 {
 public:
@@ -18,6 +20,10 @@ private:
 };
 
 void GreedyPlacement::Decision() {
+    std::sort(Lib::TableConfigs().begin(), Lib::TableConfigs().end(),
+            [](const TableConfig& l, const TableConfig& r) {
+                return l.size * l.element_size < r.size * r.element_size;
+            });
     std::priority_queue<Pair, std::vector<Pair>, PairComparator> sizes;
     for (Hostid h = 0; h < Lib::NumHosts(); ++h) {
         sizes.emplace(h, 0);
