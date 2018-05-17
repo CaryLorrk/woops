@@ -10,7 +10,7 @@
 namespace woops
 {
 class Storage;
-using StorageConstructor = std::function<Storage*()> ;
+using StorageConstructor = std::function<Storage*(Tableid)> ;
 
 struct TableConfig {
     Tableid id;

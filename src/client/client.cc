@@ -18,11 +18,11 @@ void Client::CreateTable(const TableConfig& config) {
     auto&& table = *pair.first->second;
     table.size = config.size;
     table.element_size = config.element_size;
-    table.worker_storage = std::unique_ptr<Storage>(config.worker_storage_constructor());
+    table.worker_storage = std::unique_ptr<Storage>(config.worker_storage_constructor(config.id));
     table.config = config;
-    table.apply_buffer = std::unique_ptr<Storage>(config.apply_buffer_constructor());
+    table.apply_buffer = std::unique_ptr<Storage>(config.apply_buffer_constructor(config.id));
     table.need_apply = false;
-    table.transmit_buffer = std::unique_ptr<Storage>(config.transmit_buffer_constructor());
+    table.transmit_buffer = std::unique_ptr<Storage>(config.transmit_buffer_constructor(config.id));
 }
 
 void Client::LocalAssign(Tableid id, const Storage& data) {
@@ -85,8 +85,8 @@ void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, c
         std::lock_guard<std::mutex> lock(table.mu);
         table.apply_buffer->Decode(bytes, Lib::Placement().GetPartitions(id).at(server));
         table.need_apply = true;
-        if (table.iterations[server] < iteration) {
-            table.iterations[server] = iteration;
+        if (table.iterations.at(server) < iteration) {
+            table.iterations.at(server) = iteration;
         }
     }
     Lib::Consistency().ServerPushHandler(server, id, iteration, bytes, iteration_);
@@ -100,8 +100,6 @@ void Client::sync_placement() {
     if (Lib::ThisHost() != 0) {
         Lib::Comm().SyncPlacement();
     }
-    LOG(INFO) << "Placement: ";
-    std::cout << Lib::Placement().ToString() << std::endl;
 }
 
 void Client::sync_server() {

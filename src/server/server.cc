@@ -13,8 +13,8 @@ void Server::CreateTable(const TableConfig& config, size_t size) {
     auto&& table = *pair.first->second;
 
     table.storages.resize(Lib::NumHosts());
-    for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
-        table.storages[host] = std::unique_ptr<Storage>(config.server_storage_constructor());
+    for (Hostid to = 0; to < Lib::NumHosts(); ++to) {
+        table.storages[to] = std::unique_ptr<Storage>(config.server_storage_constructor(config.id));
     }
 
     table.size = size;
@@ -27,8 +27,8 @@ void Server::ClientPushHandler(Hostid client, Tableid id, Iteration iteration, c
     auto&& table = GetTable(id);
     {
         std::lock_guard<std::mutex> lock(table.mu);
-        for (Hostid host = 0; host < Lib::NumHosts(); ++host) {
-            table.storages[host]->Decode(host, bytes);
+        for (Hostid to = 0; to < Lib::NumHosts(); ++to) {
+            table.storages[to]->Decode(client, to, bytes);
         }
         if (table.iterations[client] < iteration) {
             table.iterations[client] = iteration;

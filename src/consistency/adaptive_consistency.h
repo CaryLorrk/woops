@@ -9,11 +9,10 @@ namespace woops
 class AdaptiveConsistency: public Consistency
 {
 public:
-    AdaptiveConsistency ();
-    virtual ~AdaptiveConsistency ();
+    AdaptiveConsistency(int threshold);
 
 private:
-    /* data */
+    int threshold_;
 };
     
 } /* woops */ 

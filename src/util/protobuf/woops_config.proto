@@ -4,5 +4,7 @@ message WoopsConfigProto {
     int32 staleness = 1;
     string this_host = 2;
     string port = 3;
-    repeated string hosts = 4;
+    string placement = 4;
+    string consistency = 5;
+    repeated string hosts = 6;
 }

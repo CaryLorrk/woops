@@ -21,7 +21,8 @@ void SSPConsistency::ClientSync(Tableid id, Iteration iteration) {
 }    
 
 void SSPConsistency::ClientUpdate(Tableid id,
-        MAYBE_UNUSED const Storage& storage, Iteration iteration) {
+        MAYBE_UNUSED const Storage& storage, 
+        MAYBE_UNUSED Iteration iteration) {
     auto&& table = Lib::Client().GetTable(id);
     {
         std::unique_lock<std::mutex> lock(table.mu);
@@ -33,13 +34,16 @@ void SSPConsistency::ClientUpdate(Tableid id,
     }
 }
 
-void SSPConsistency::ServerPushHandler(Hostid server, Tableid id,
-        Iteration iteration, const Bytes& bytes, Iteration iteration_now) {
+void SSPConsistency::ServerPushHandler(MAYBE_UNUSED Hostid server, Tableid id,
+        MAYBE_UNUSED Iteration iteration,
+        MAYBE_UNUSED const Bytes& bytes,
+        MAYBE_UNUSED Iteration iteration_now) {
     auto&& table = Lib::Client().GetTable(id);
     table.cv.notify_all();
 }
 
-Iteration SSPConsistency::GetServerData(Hostid client, Tableid id, Iteration iteration) {
+Iteration SSPConsistency::GetServerData(MAYBE_UNUSED Hostid client,
+        Tableid id, Iteration iteration) {
     auto&& table = Lib::Server().GetTable(id);
     Iteration min;
     std::unique_lock<std::mutex> lock(table.mu); 
@@ -50,8 +54,10 @@ Iteration SSPConsistency::GetServerData(Hostid client, Tableid id, Iteration ite
     return min;
 }
 
-void SSPConsistency::ClientPushHandler(Hostid client, Tableid id,
-        Iteration iteration, const Bytes& bytes) {
+void SSPConsistency::ClientPushHandler(
+        MAYBE_UNUSED Hostid client, Tableid id,
+        Iteration iteration,
+        MAYBE_UNUSED const Bytes& bytes) {
     auto&& table = Lib::Server().GetTable(id);
     Iteration min;
     {
@@ -61,7 +67,6 @@ void SSPConsistency::ClientPushHandler(Hostid client, Tableid id,
     if (min >= iteration - staleness_) {
         table.cv.notify_all();
     }
-
 }
     
 } /* woops */ 

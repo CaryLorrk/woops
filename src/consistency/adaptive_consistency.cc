@@ -4,5 +4,6 @@
 
 namespace woops
 {
+AdaptiveConsistency::AdaptiveConsistency(int threshold): threshold_(threshold) {}
     
 } /* woops */ 

@@ -18,7 +18,7 @@ public:
     virtual Bytes Serialize() const = 0;
     virtual Bytes Encode() = 0;
     virtual std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) = 0;
-    virtual void Decode(Hostid host, const Bytes& bytes) = 0;
+    virtual void Decode(Hostid from, Hostid to, const Bytes& bytes) = 0;
     virtual void Decode(const Bytes& bytes, const Placement::Partition& partition) = 0;
     virtual void Assign(const Storage& data) = 0;
     virtual void Update(const Storage& delta) = 0;

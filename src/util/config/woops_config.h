@@ -15,12 +15,16 @@ struct WoopsConfig {
     int this_host;
     int staleness;
     std::string port;
+    std::string placement;
+    std::string consistency;
     std::vector<std::string> hosts;
 
     WoopsConfig(const WoopsConfigProto& proto):
         this_host(-1),
         staleness(proto.staleness()),
-        port(proto.port())
+        port(proto.port()),
+        placement(proto.placement()),
+        consistency(proto.consistency())
     {
         if (port.empty()) port = "50052";
 

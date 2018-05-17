@@ -14,7 +14,7 @@ template<typename T>
 class DenseStorage: public Storage
 {
 public:
-    DenseStorage(size_t size);
+    DenseStorage(size_t size = 0);
     DenseStorage(const std::vector<T>& data);
     DenseStorage(std::vector<T>&& data);
 
@@ -23,7 +23,7 @@ public:
     void Deserialize(const Bytes& bytes) override;
     Bytes Encode() override;
     std::map<Hostid, Bytes> Encode(const Placement::Partitions& partitions) override;
-    void Decode(Hostid host, const Bytes& bytes) override;
+    void Decode(Hostid from, Hostid to, const Bytes& bytes) override;
     void Decode(const Bytes& bytes, const Placement::Partition& partition) override;
     void Assign(const Storage& data) override;
     void Update(const Storage& delta) override;
@@ -88,7 +88,8 @@ std::map<Hostid, Bytes> DenseStorage<T>::Encode(
 
 template<typename T>
 void DenseStorage<T>::Decode(
-        MAYBE_UNUSED Hostid host,
+        MAYBE_UNUSED Hostid from,
+        MAYBE_UNUSED Hostid to,
         MAYBE_UNUSED const Bytes& bytes) {
     LOG(FATAL) << "Unimplemented";
 }

@@ -28,12 +28,25 @@ namespace woops
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.woops_config_ = config;
-    lib.consistency_ = std::make_unique<PassiveSSPConsistency>(config.staleness);
-    //lib.consistency_ = std::make_unique<AggressiveSSPConsistency>(config.staleness);
-    //lib.consistency_ = std::make_unique<AdaptiveConsistency>(config.staleness);
-    lib.placement_ = std::make_unique<RoundRobinPlacement>();
-    //lib.placement_ = std::make_unique<GreedyPlacement>();
-    //lib.placement_ = std::make_unique<UniformSplitPlacement>();
+    if (config.consistency == "passive") {
+        lib.consistency_ = std::make_unique<PassiveSSPConsistency>(config.staleness);
+    } else if (config.consistency == "aggressive") {
+        lib.consistency_ = std::make_unique<AggressiveSSPConsistency>(config.staleness);
+    } else if (config.consistency == "adaptive") {
+        lib.consistency_ = std::make_unique<AdaptiveConsistency>(config.staleness);
+    } else {
+        LOG(FATAL) << "Unknown consistency: " << config.consistency;
+    }
+
+    if (config.placement == "rr") {
+        lib.placement_ = std::make_unique<RoundRobinPlacement>();
+    } else if (config.placement == "greedy") {
+        lib.placement_ = std::make_unique<GreedyPlacement>();
+    } else if (config.placement == "uniform") {
+        lib.placement_ = std::make_unique<UniformSplitPlacement>();
+    } else {
+        LOG(FATAL) << "Unknown placement: " << config.placement;
+    }
     lib.client_ = std::make_unique<woops::Client>();
     lib.server_ = std::make_unique<woops::Server>();
     lib.comm_ = std::make_unique<woops::Comm>();
