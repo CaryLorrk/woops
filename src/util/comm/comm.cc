@@ -202,10 +202,11 @@ void Comm::finish() {
             stubs_[host]->Finish(&ctx, req, &res);
         }
     }
-    std::chrono::system_clock::time_point deadline = 
-        std::chrono::system_clock::now() + 1ms;
-    rpc_server_->Shutdown(deadline);
-    rpc_server_thread_.join();
+    abort();
+    //std::chrono::system_clock::time_point deadline = 
+        //std::chrono::system_clock::now() + 1ms;
+    //rpc_server_->Shutdown(deadline);
+    //rpc_server_thread_.join();
 }
 
 Comm::~Comm() {

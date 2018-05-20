@@ -31,9 +31,9 @@ void PassiveSSPConsistency::ClientUpdate(Tableid id,
             std::lock_guard<std::mutex> lock(table.mu);
             server_to_bytes = table.transmit_buffer->Encode(partitions);
         }
-        for (auto&& kv: server_to_bytes) {
+        for (auto&& kv: partitions) {
             auto&& server = kv.first;
-            auto&& bytes = kv.second;
+            auto&& bytes = server_to_bytes[server];
             Lib::Comm().ClientPush(server, id, iteration, std::move(bytes));
         }
 
