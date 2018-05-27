@@ -85,8 +85,8 @@ void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, c
         std::lock_guard<std::mutex> lock(table.mu);
         table.apply_buffer->Decode(bytes, Lib::Placement().GetPartitions(id).at(server));
         table.need_apply = true;
-        if (table.iterations.at(server) < iteration) {
-            table.iterations.at(server) = iteration;
+        if (table.iterations[server] < iteration) {
+            table.iterations[server] = iteration;
         }
     }
     Lib::Consistency().ServerPushHandler(server, id, iteration, bytes, iteration_);
