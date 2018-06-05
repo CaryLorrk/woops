@@ -33,6 +33,7 @@ public:
     void Start();
 
     ClientTable& GetTable(Tableid id);
+    std::map<Tableid, std::unique_ptr<ClientTable>>& GetTables();
     void SyncStorageHandler(Tableid id, const Bytes& bytes);
     void ServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes);
     std::string ToString();

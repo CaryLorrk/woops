@@ -10,7 +10,7 @@ class AggressiveSSPConsistency: public SSPConsistency
 {
 public:
     AggressiveSSPConsistency(Iteration staleness);
-    void ClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
+    void AfterClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
 
 };
 

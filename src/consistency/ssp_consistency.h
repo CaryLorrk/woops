@@ -12,8 +12,8 @@ class SSPConsistency: public Consistency
 public:
     SSPConsistency (Iteration staleness);
     void ClientSync(Tableid id, Iteration iteration) override;
-    void ClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
-    void ServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes, Iteration iteration_now)  override;
+    void AfterClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
+    void AfterServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes, Iteration iteration_now)  override;
 
     Iteration GetServerData(Hostid client, Tableid id, Iteration iteration) override;
     void ClientPushHandler(Hostid client, Tableid id, Iteration iteration, const Bytes& bytes)  override;

@@ -20,7 +20,7 @@ void SSPConsistency::ClientSync(Tableid id, Iteration iteration) {
 
 }    
 
-void SSPConsistency::ClientUpdate(Tableid id,
+void SSPConsistency::AfterClientUpdate(Tableid id,
         MAYBE_UNUSED const Storage& storage, 
         MAYBE_UNUSED Iteration iteration) {
     auto&& table = Lib::Client().GetTable(id);
@@ -34,7 +34,7 @@ void SSPConsistency::ClientUpdate(Tableid id,
     }
 }
 
-void SSPConsistency::ServerPushHandler(MAYBE_UNUSED Hostid server, Tableid id,
+void SSPConsistency::AfterServerPushHandler(MAYBE_UNUSED Hostid server, Tableid id,
         MAYBE_UNUSED Iteration iteration,
         MAYBE_UNUSED const Bytes& bytes,
         MAYBE_UNUSED Iteration iteration_now) {

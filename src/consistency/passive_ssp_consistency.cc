@@ -6,10 +6,8 @@ namespace woops
 {
 PassiveSSPConsistency::PassiveSSPConsistency(Iteration staleness): SSPConsistency(staleness) {}
 
-void PassiveSSPConsistency::ClientUpdate(Tableid id,
+void PassiveSSPConsistency::AfterClientUpdate(Tableid id,
         MAYBE_UNUSED const Storage& storage, Iteration iteration) {
-    // apply to gpu
-    SSPConsistency::ClientUpdate(id, storage, iteration);
 
     auto&& table = Lib::Client().GetTable(id);
     Iteration min;
@@ -42,6 +40,9 @@ void PassiveSSPConsistency::ClientUpdate(Tableid id,
             Lib::Comm().ClientPull(kv.first, id, iteration);
         }
     }
+
+    // apply to gpu
+    SSPConsistency::AfterClientUpdate(id, storage, iteration);
 }
 
     

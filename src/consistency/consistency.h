@@ -9,16 +9,31 @@ namespace woops
 class Consistency
 {
 public:
+    virtual void Start() {}
+    virtual void BeforeClock(
+            MAYBE_UNUSED Iteration iteration) {}
     virtual void ClientSync(
             MAYBE_UNUSED Tableid id,
             MAYBE_UNUSED Iteration iteration) {}
 
-    virtual void ClientUpdate(
+    virtual void BeforeClientUpdate(
             MAYBE_UNUSED Tableid id,
             MAYBE_UNUSED const Storage& storage,
             MAYBE_UNUSED Iteration iteration) {}
 
-    virtual void ServerPushHandler(
+    virtual void AfterClientUpdate(
+            MAYBE_UNUSED Tableid id,
+            MAYBE_UNUSED const Storage& storage,
+            MAYBE_UNUSED Iteration iteration) {}
+
+    virtual void BeforeServerPushHandler(
+            MAYBE_UNUSED Hostid server,
+            MAYBE_UNUSED Tableid id,
+            MAYBE_UNUSED Iteration iteration,
+            MAYBE_UNUSED const Bytes& bytes,
+            MAYBE_UNUSED Iteration iteration_now) {}
+
+    virtual void AfterServerPushHandler(
             MAYBE_UNUSED Hostid server,
             MAYBE_UNUSED Tableid id,
             MAYBE_UNUSED Iteration iteration,

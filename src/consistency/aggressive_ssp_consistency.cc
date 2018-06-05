@@ -8,12 +8,9 @@ namespace woops
 AggressiveSSPConsistency::AggressiveSSPConsistency(Iteration staleness): SSPConsistency(staleness){}
 
 
-void AggressiveSSPConsistency::ClientUpdate(Tableid id,
+void AggressiveSSPConsistency::AfterClientUpdate(Tableid id,
         MAYBE_UNUSED const Storage& storage, Iteration iteration) {
     auto&& table = Lib::Client().GetTable(id);
-    // apply to gpu
-    SSPConsistency::ClientUpdate(id, storage, iteration);
-
     // push to server
     auto&& partitions = Lib::Placement().GetPartitions(id);
     std::map<Hostid, Bytes> server_to_bytes;
@@ -31,6 +28,9 @@ void AggressiveSSPConsistency::ClientUpdate(Tableid id,
     for (auto&& kv: partitions) {
         Lib::Comm().ClientPull(kv.first, id, iteration);
     }
+
+    // apply to gpu
+    SSPConsistency::AfterClientUpdate(id, storage, iteration);
 }
 
 } /* woops */ 

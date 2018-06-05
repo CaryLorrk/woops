@@ -9,7 +9,7 @@ class PassiveSSPConsistency: public SSPConsistency
 {
 public: 
     PassiveSSPConsistency (Iteration staleness);
-    void ClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
+    void AfterClientUpdate(Tableid id, const Storage& storage, Iteration iteration) override;
 }; 
 } /* woops */ 
 

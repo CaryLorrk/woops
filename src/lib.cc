@@ -16,6 +16,7 @@
 #include "util/placement/round_robin_placement.h"
 #include "util/placement/greedy_placement.h"
 
+#include "consistency/traditional_ssp_consistency.h"
 #include "consistency/passive_ssp_consistency.h"
 #include "consistency/aggressive_ssp_consistency.h"
 #include "consistency/adaptive_consistency.h"
@@ -34,6 +35,8 @@ void Lib::Initialize(const WoopsConfig& config) {
         lib.consistency_ = std::make_unique<AggressiveSSPConsistency>(config.staleness);
     } else if (config.consistency == "adaptive") {
         lib.consistency_ = std::make_unique<AdaptiveConsistency>(config.staleness);
+    } else if (config.consistency == "traditional") {
+        lib.consistency_ = std::make_unique<TraditionalSSPConsistency>(config.staleness);
     } else {
         LOG(FATAL) << "Unknown consistency: " << config.consistency;
     }

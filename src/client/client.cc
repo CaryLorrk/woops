@@ -32,16 +32,19 @@ void Client::LocalAssign(Tableid id, const Storage& data) {
 }
 
 void Client::Update(Tableid id, const Storage& data) {
+    Lib::Consistency().BeforeClientUpdate(id, data, iteration_);
     auto&& table = GetTable(id);
     {
         std::lock_guard<std::mutex> lock(table.mu);
         table.transmit_buffer->Update(data);
     }
-    Lib::Consistency().ClientUpdate(id, data, iteration_);
+    Lib::Consistency().AfterClientUpdate(id, data, iteration_);
 }
 
 void Client::Clock() {
+    Lib::Consistency().BeforeClock(iteration_);
     iteration_++;    
+
 }
 
 void Client::Sync(Tableid id) {
@@ -56,6 +59,7 @@ void Client::Start() {
     Lib::Comm().Barrier();
     sync_client();
     Lib::Comm().Barrier();
+    Lib::Consistency().Start();
 }
 
 std::string Client::ToString() {
@@ -70,6 +74,11 @@ std::string Client::ToString() {
 ClientTable& Client::GetTable(Tableid id) {
     return *tables_[id].get();
 }
+
+std::map<Tableid, std::unique_ptr<ClientTable>>& Client::GetTables() {
+    return tables_;
+}
+
 void Client::SyncStorageHandler(Tableid id, const Bytes& bytes) {
     auto&& table = GetTable(id);
     {
@@ -80,6 +89,7 @@ void Client::SyncStorageHandler(Tableid id, const Bytes& bytes) {
 }
 
 void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, const Bytes& bytes) {
+    Lib::Consistency().BeforeServerPushHandler(server, id, iteration, bytes, iteration_);
     auto&& table = GetTable(id);
     {
         std::lock_guard<std::mutex> lock(table.mu);
@@ -89,7 +99,7 @@ void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, c
             table.iterations[server] = iteration;
         }
     }
-    Lib::Consistency().ServerPushHandler(server, id, iteration, bytes, iteration_);
+    Lib::Consistency().AfterServerPushHandler(server, id, iteration, bytes, iteration_);
 }
 
 void Client::sync_placement() {
