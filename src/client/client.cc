@@ -105,6 +105,9 @@ void Client::ServerPushHandler(Hostid server, Tableid id, Iteration iteration, c
 void Client::sync_placement() {
     if (Lib::ThisHost() == 0) {
         Lib::Placement().Decision();
+        //LOG(INFO) << "===============Placement============\n" <<
+            //Lib::Placement().ToString() << "\n"
+            //"=====================End==================";
     }
     Lib::Comm().Barrier();
     if (Lib::ThisHost() != 0) {

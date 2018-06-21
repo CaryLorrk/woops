@@ -29,6 +29,7 @@ namespace woops
 void Lib::Initialize(const WoopsConfig& config) {
     Lib& lib = Get();
     lib.woops_config_ = config;
+    LOG(INFO) << "consistency: " << config.consistency;
     if (config.consistency == "passive") {
         lib.consistency_ = std::make_unique<PassiveSSPConsistency>(config.staleness);
     } else if (config.consistency == "aggressive") {
@@ -41,6 +42,7 @@ void Lib::Initialize(const WoopsConfig& config) {
         LOG(FATAL) << "Unknown consistency: " << config.consistency;
     }
 
+    LOG(INFO) << "placement: "  << config.placement;
     if (config.placement == "rr") {
         lib.placement_ = std::make_unique<RoundRobinPlacement>();
     } else if (config.placement == "greedy") {
