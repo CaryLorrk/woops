@@ -27,8 +27,8 @@ cd benchmarks
 ```
 
 ## Usage
-Please read the architecture in [paper](paper.pdf)
-Consistency Controller: src/consistency
-Placement: src/placement
+Please read the architecture in [paper](paper.pdf)  
+Consistency Controller: src/consistency  
+Placement: src/placement  
 Storages: in apps
 
